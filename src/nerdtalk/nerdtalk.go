@@ -21,20 +21,51 @@ func fiddle(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "<h1>Hello %s!</h1>", r.URL.Path[len(URLFiddle):])
 }
 
-func get(w http.ResponseWriter, r *http.Request) {
-	parts := strings.Split(r.URL.Path[len(URLGet):],"/")
-	if len(parts) != 2 {
-		w.WriteHeader(404)
-		fmt.Fprintf(w, "This is not the query you're looking for!\nquery: ",r.URL.Path)
+func api(w http.ResponseWriter, r *http.Request) {
+	// user is trying to access api, he better have his passport
+	if(!auth(r)) { //TODO add more information to auth, like user permissions
+		w.WriteHeader(404);
+		fmt.Fprintln(w, "Sorry, you can't do this. Maybe you should log in.")
 		return
 	}
-	id, err := strconv.ParseUint(parts[1], 0, 64)
+
+	parts := strings.Split(strings.Trim(r.URL.Path,"/"),"/")
+
+	switch parts[0] {
+		case "get":
+			if id, resume := getIDCheckLength(parts, 3, w, r); resume {
+				get(w, r, parts[1:], id)
+			}
+		case "add":
+			if id, resume := getIDCheckLength(parts, 3, w, r); resume {
+				add(w, r, parts[1:], id)
+			}
+		default:
+			fmt.Println("Bad Request:",r.URL, parts)
+			fmt.Fprintln(w, "I'm sorry, what?")
+	}
+}
+
+func getIDCheckLength(parts []string, requiredLength int, w http.ResponseWriter, r *http.Request) (id uint64, resume bool) {
+	if len(parts) != requiredLength {
+		w.WriteHeader(404)
+		fmt.Fprintln(w, "This is not the query you're looking for!\nquery:",r.URL.Path)
+		resume = false
+		return
+	}
+	id, err := strconv.ParseUint(parts[requiredLength-1], 0, 64)
 	if err != nil {
 		fmt.Println("Get: NaN:", r, err)
 		w.WriteHeader(404)
-		fmt.Fprintf(w, "This is not the query you're looking for!\nquery: ",r.URL.Path)
+		fmt.Fprintln(w, "This is not the query you're looking for!\nquery:",r.URL.Path)
+		resume = false
 		return
 	}
+	resume = true
+	return
+}
+
+func get(w http.ResponseWriter, r *http.Request, parts []string, id uint64) {
 	switch parts[0] {
 		case "post":
 			js(w,theDB.getPost(id))
@@ -46,12 +77,21 @@ func get(w http.ResponseWriter, r *http.Request) {
 			js(w,theDB.getUser(id))
 		default:
 		w.WriteHeader(404)
-		fmt.Fprintf(w, "This is not the query you're looking for!\nquery: ",r.URL.Path)
+		fmt.Fprintln(w, "This is not the query you're looking for!\nquery:",r.URL.Path)
 	}
 }
 
+func add(w http.ResponseWriter, r *http.Request, parts []string, id uint64) {
+	//TODO
+}
+
+func auth(r *http.Request) bool {
+	return true //TODO
+}
+
 func js (w http.ResponseWriter, val interface{}) {
-	ret, err := json.Marshal(val)
+	ret, err := json.MarshalIndent(val, "", "  ")
+	//TODO limit depth here
 	if err != nil {
 		fmt.Println("JSON: ",err)
 		w.WriteHeader(500)
@@ -68,7 +108,8 @@ func main() {
 	test()
 	
     http.HandleFunc(URLFiddle, fiddle)
-    http.HandleFunc(URLGet, get)
+    http.HandleFunc(URLGet, api)
+    http.HandleFunc(URLAdd, api)
     
     http.ListenAndServe(":8080", nil)
     
