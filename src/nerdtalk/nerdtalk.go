@@ -13,6 +13,7 @@ const URLGet = "/get/"
 const URLAdd = "/add/"
 const URLFiddle = "/fiddle/"
 const URLLogin = "/login/"
+const URLLogout = "/logout/"
 
 // runtime vars
 var theDB *DB
@@ -31,6 +32,8 @@ func main() {
 	http.HandleFunc(URLGet, api)
 	http.HandleFunc(URLAdd, api)
 	http.HandleFunc(URLLogin, login)
+	http.HandleFunc(URLLogout, logout)
+
 	http.ListenAndServe(":8080", nil)
 }
 

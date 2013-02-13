@@ -125,3 +125,24 @@ func (db *DB) addUser(user *User) *User {
 	}
 	return user
 }
+
+func (db *DB) setUserToken(user *User, newToken string) *User {
+	c := db.s.DB(db.name).C("User")
+	err := c.UpdateId(user.ID, bson.M{"$set": bson.M{"authtoken": newToken}})
+	if err != nil {
+		fmt.Println("User Token failed:", err)
+		return nil
+	}
+	user.AuthToken = newToken
+	return user
+}
+
+func (db *DB) addPostLike(postID bson.ObjectId, like *Like) *Like {
+	c := db.s.DB(db.name).C("Post")
+	err := c.UpdateId(postID, bson.M{"$push": bson.M{"likes": like}})
+	if err != nil {
+		fmt.Println("Like failed:", err)
+		return nil
+	}
+	return like
+}

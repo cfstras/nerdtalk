@@ -13,7 +13,12 @@ They can be aquired with `/login/`.
 ### /login/ ###
 Accepts two POST values, `User` and `Pass`, each containing strings.  
 On success, auth cookies are set.  
-Returns an AuthState.
+Returns an _AuthState_.
+
+### /logout/ ###
+Invalidates the auth token for the current user, if any.  
+Clears auth cookies.  
+Returns an _AuthState_
 
 ### AuthState ###
 
@@ -24,34 +29,34 @@ Returns an AuthState.
     
 Possible Values:
 
- - 0, Unknown
- - 1, InvalidUser
- - 2, InvalidID
- - 4, WrongPassword
- - 5, WrongToken
- - 6, Valid
+ - 0, _Unknown_
+ - 1, _InvalidUser_
+ - 2, _InvalidID_
+ - 4, _WrongPassword_
+ - 5, _WrongToken_
+ - 6, _Valid_
 
 **TODO**: These expose too much info. Make Auth failures less verbose.
 
 ## /get/ ##
 
-### /get/post/<id> ###
+### /get/post/<post id> ###
 fetches a post from the database, adressed by its uid.
 
-### /get/user/<id> ###
+### /get/posts/<thread id> ###
+fetches posts from the database belonging to a given thread uid.
+
+### /get/user/<user id> ###
 fetches info about a user from the database, adressed by his/her uid.
 
-### /get/thread/<id> ###
+### /get/thread/<thread id> ###
 fetches info about a thread from the database, adressed by its uid.
 
-### /get/posts/<id> ###
+### /get/posts/<thread id> ###
 fetches posts from the database which belong to a thread adressed by the given uid.
 
 ### /get/threads/ ###
 fetches all threads from the database.
-
-### /get/threads/<id> ###
-fetches threads from the database which belong to a user adressed by the given uid.
 
 ## /add/ ##
 
@@ -66,3 +71,7 @@ The title of the thread is expected as POST-attribute `Title`, the text for the 
 ### /add/user/ ###
 Adds a new user.
 **TODO**
+
+### /add/like/<post ID> ##
+Adds a _Like_ to the given post. Returns the new post Like list.
+**TODO** what happens if you double-like?

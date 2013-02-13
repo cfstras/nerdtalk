@@ -7,26 +7,32 @@ import (
 )
 
 type Thread struct {
-	ID      bson.ObjectId "_id"
-	Title   string
-	Author  bson.ObjectId
-	Created time.Time
+	ID      bson.ObjectId "_id,omitempty"
+	Title   string        "title"
+	Author  bson.ObjectId "author"
+	Created time.Time     "created"
 }
 
 type Post struct {
-	ID      bson.ObjectId "_id"
-	Thread  bson.ObjectId
-	Author  bson.ObjectId
-	Text    string
-	Created time.Time
+	ID      bson.ObjectId "_id,omitempty"
+	Thread  bson.ObjectId "thread"
+	Author  bson.ObjectId "author"
+	Text    string        "text"
+	Created time.Time     "created"
+	Likes   []Like        `bson:"likes"`
+}
+
+type Like struct {
+	User bson.ObjectId "_id"
+	Time time.Time     "time"
 }
 
 type User struct {
-	ID          bson.ObjectId "_id"
-	Name        string
-	Joined      time.Time
-	AuthToken   string
-	PasswordSHA string
+	ID          bson.ObjectId "_id,omitempty"
+	Name        string        "name"
+	Joined      time.Time     "joined"
+	AuthToken   string        "authtoken"
+	PasswordSHA string        "passwordsha"
 }
 
 type Request struct {

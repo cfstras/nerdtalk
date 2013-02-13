@@ -110,8 +110,27 @@ func login(w http.ResponseWriter, r *http.Request) {
 	req.State.String()
 	req.js(req.State)
 
-	//TODO OpenID
+	//TODO OpenID (also for logout)
+	//TODO save as session in list, add session id
 
+}
+
+func logout(w http.ResponseWriter, r *http.Request) {
+	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
+	authed := req.auth()
+	if authed {
+		newToken := RandString(32)
+		theDB.setUserToken(req.User, newToken)
+		//TODO check result
+		// don't return the new authtoken!
+	}
+	// clear cookies
+	http.SetCookie(req.W, &http.Cookie{Name: "nerdtalk-uid", Value: "", Expires: time.Now().AddDate(-1, 0, 0)})
+	http.SetCookie(req.W, &http.Cookie{Name: "nerdtalk-token", Value: "", Expires: time.Now().AddDate(-1, 0, 0)})
+	req.User = nil
+	req.State.AuthState = Unknown
+	req.State.String()
+	req.js(req.State)
 }
 
 func (req *Request) get(parts []string) {
@@ -156,6 +175,10 @@ func (req *Request) add(parts []string) {
 	case "user":
 		if resume := req.checkLength(parts, 1); resume {
 			req.addUser()
+		}
+	case "like":
+		if id, resume := req.getIDCheckLength(parts, 2); resume {
+			req.addLike(id)
 		}
 	default:
 		req.W.WriteHeader(404)
@@ -237,6 +260,13 @@ func (req *Request) addThread() {
 	post = theDB.addPost(post)
 	req.js(thread)
 	req.js(post)
+}
+
+func (req *Request) addLike(postID bson.ObjectId) {
+	like := &Like{User: req.User.ID, Time: time.Now()}
+	like = theDB.addPostLike(postID, like)
+	//TODO check return
+	//TODO output new post
 }
 
 func (req *Request) auth() (authed bool) {
