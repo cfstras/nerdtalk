@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+<h2>Add Thread</h2>
+	<form action="/add/thread" method="POST"><p>
+		Title: <input type="text" name="Title"><br>
+		Text:<br><textarea name="Text" cols="50" rows="10"></textarea><br>
+		<input type="submit" value="Add Thread">
+	</p></form>
+<h2>Login</h2>
+	<form action="/login/" method="POST"><p>
+		User: <input type="text" name="User">
+		Pass: <input type="password" name="Pass">
+		<input type="submit" value="Bruteforce">
+	</p></form>
+
+	<p>
+		{{.}}
+	</p>
+</body>
+</html>
