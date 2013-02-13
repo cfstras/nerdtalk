@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"time"
 	"html/template"
+	"strings"
+	"os"
+	"io"
 )
 
 type Page struct {
@@ -46,4 +49,26 @@ func page(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "template render failed")
 		fmt.Println("Template error:", err)
 	}
+}
+
+func css(w http.ResponseWriter, r *http.Request) {
+	path := strings.Replace(r.URL.Path[len(URLCSS):],"..","",-1)
+	f, err := os.Open("css/"+path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			w.WriteHeader(404)
+			fmt.Fprintln(w, "File not found.")
+		} else if os.IsPermission(err) {
+			w.WriteHeader(403)
+			fmt.Fprintln(w, "Permission Denied.")
+		} else {
+			w.WriteHeader(500)
+			fmt.Fprintln(w, "Server error.")
+			fmt.Println("Error reading file:",err)
+		}
+		return
+	}
+	defer f.Close()
+	w.Header().Add("Content-Type", "text/css")
+	io.Copy(w,f)
 }

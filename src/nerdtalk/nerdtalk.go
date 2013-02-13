@@ -15,6 +15,7 @@ const URLFiddle = "/fiddle/"
 const URLLogin = "/login/"
 const URLLogout = "/logout/"
 const URLPage = "/"
+const URLCSS = "/css/"
 
 // runtime vars
 var theDB *DB
@@ -35,7 +36,8 @@ func main() {
 	http.HandleFunc(URLLogin, login)
 	http.HandleFunc(URLLogout, logout)
 	http.HandleFunc(URLPage, page)
-
+	http.HandleFunc(URLCSS, css)
+	
 	http.ListenAndServe(":8080", nil)
 }
 

@@ -1,0 +1,43 @@
+@charset "UTF-8";
+
+* {
+	/* Reset browsers default margin, padding and font sizes */
+	margin: 0;
+	padding: 0;
+}
+
+#wrap {
+	width: 100%;
+	min-height: 100%;
+	
+}
+
+#threadbar {
+	padding: 1em 1em 1em 1em;
+	margin: 0.5em 1em 0.5em 0.5em;
+	float: left;
+	position: static;
+	height: 100%;
+	border: 1px dashed;
+	width: 15%;
+	min-width: 20em;
+}
+
+threadentry {
+	background-color: #bbffaa;
+}
+
+#thread {
+	min-width: 100em;
+	width: 80%;
+}
+
+.post {
+	
+	
+}
+
+#postbox {
+	margin: 1em 0.5em 0.5em 0.5em;
+	
+}
