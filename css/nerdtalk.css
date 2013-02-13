@@ -4,6 +4,7 @@
 	/* Reset browsers default margin, padding and font sizes */
 	margin: 0;
 	padding: 0;
+	font-family:Verdana;
 }
 
 #wrap {
@@ -20,24 +21,37 @@
 	height: 100%;
 	border: 1px dashed;
 	width: 15%;
-	min-width: 20em;
+	min-width: 10em;
 }
 
-threadentry {
-	background-color: #bbffaa;
+.threadentry {
+	background-color: rgb(223, 224, 235);
 }
 
 #thread {
-	min-width: 100em;
-	width: 80%;
+	min-width: 40em;
+	width: 75%;
+	float: right
+}
+
+.threadheader {
+	background-color: rgb(223, 224, 235);
+	margin: 0.5em 0.5em 0.5em 0em;
+	padding: 0.2em 0.5em 0.2em 0.5em;
 }
 
 .post {
-	
+	background-color: rgb(233, 234, 245);
+	margin: 0.5em 0.5em 0.5em 0em;
+	padding: 0.2em 0.5em 0.2em 0.5em;
+}
+
+.info {
+	float: right;
 	
 }
 
 #postbox {
 	margin: 1em 0.5em 0.5em 0.5em;
-	
+	clear: both;
 }
