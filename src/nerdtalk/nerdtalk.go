@@ -14,6 +14,7 @@ const URLAdd = "/add/"
 const URLFiddle = "/fiddle/"
 const URLLogin = "/login/"
 const URLLogout = "/logout/"
+const URLPage = "/"
 
 // runtime vars
 var theDB *DB
@@ -33,6 +34,7 @@ func main() {
 	http.HandleFunc(URLAdd, api)
 	http.HandleFunc(URLLogin, login)
 	http.HandleFunc(URLLogout, logout)
+	http.HandleFunc(URLPage, page)
 
 	http.ListenAndServe(":8080", nil)
 }
@@ -70,6 +72,9 @@ func defaults() {
 	}
 	if _, ok := s.Limits["thread.title.minLength"]; !ok {
 		s.Limits["thread.title.minLength"] = 5
+	}
+	if _, ok := s.Strings["cookies.domainName"]; !ok {
+		s.Strings["cookies.domainName"] = ""
 	}
 
 	// ...

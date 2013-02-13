@@ -4,6 +4,11 @@ import (
 	"fmt"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
+	"time"
+)
+
+const (
+	
 )
 
 type DB struct {
@@ -36,7 +41,7 @@ func (db *DB) getUser(id bson.ObjectId) *User {
 	err := c.Find(bson.M{"_id": id}).One(user)
 	if err != nil {
 		fmt.Println("User", id, "not found:", err)
-		return nil
+		return &User{ID: id, Name:"Unknown User", Nick:"unknown", Joined: time.Unix(0,0)}
 	}
 	return user
 }
@@ -77,7 +82,7 @@ func (db *DB) getPost(id bson.ObjectId) *Post {
 func (db *DB) getPosts(threadID bson.ObjectId, skip, limit int) []Post {
 	c := db.s.DB(db.name).C("Post")
 	var posts []Post
-	err := c.Find(bson.M{"Thread": threadID}).Sort("Created").Skip(skip).Limit(limit).All(&posts)
+	err := c.Find(bson.M{"thread": threadID}).Sort("created").Skip(skip).Limit(limit).All(&posts)
 	if err != nil {
 		fmt.Println("Posts to Thread", threadID, "not found:", err)
 		return nil
@@ -88,7 +93,7 @@ func (db *DB) getPosts(threadID bson.ObjectId, skip, limit int) []Post {
 func (db *DB) getThreads(skip, limit int) []Thread {
 	c := db.s.DB(db.name).C("Thread")
 	var threads []Thread
-	err := c.Find(nil).Sort("-Created").Skip(skip).Limit(limit).All(&threads)
+	err := c.Find(nil).Sort("-created").Skip(skip).Limit(limit).All(&threads)
 	if err != nil {
 		fmt.Println("Thread find failed:", err)
 		return nil

@@ -78,7 +78,7 @@ func (req *Request) getIDCheckLength(parts []string, requiredLength int) (id bso
 
 func login(w http.ResponseWriter, r *http.Request) {
 	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
-
+	
 	username := r.FormValue("User")
 	password := r.FormValue("Pass")
 	if username != "" && password != "" {
@@ -101,12 +101,12 @@ func login(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-
+	
 	if req.State.AuthState == Valid {
-		http.SetCookie(req.W, &http.Cookie{Name: "nerdtalk-uid", Value: req.User.ID.Hex(), Expires: time.Now().AddDate(10, 0, 0)})
-		http.SetCookie(req.W, &http.Cookie{Name: "nerdtalk-token", Value: req.User.AuthToken, Expires: time.Now().AddDate(10, 0, 0)})
+		req.setCookies(false)
+	} else if req.State.AuthState == Unknown {
+		req.auth()
 	}
-
 	req.State.String()
 	req.js(req.State)
 
@@ -125,8 +125,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 		// don't return the new authtoken!
 	}
 	// clear cookies
-	http.SetCookie(req.W, &http.Cookie{Name: "nerdtalk-uid", Value: "", Expires: time.Now().AddDate(-1, 0, 0)})
-	http.SetCookie(req.W, &http.Cookie{Name: "nerdtalk-token", Value: "", Expires: time.Now().AddDate(-1, 0, 0)})
+	req.setCookies(true)
 	req.User = nil
 	req.State.AuthState = Unknown
 	req.State.String()
@@ -208,8 +207,8 @@ func (req *Request) addPost(threadID bson.ObjectId) {
 
 	created := time.Now()
 	post := &Post{ID: bson.NewObjectId(),
-		Thread:  threadID,
-		Author:  req.User.ID,
+		ThreadID:  threadID,
+		AuthorID:  req.User.ID,
 		Text:    text,
 		Created: created}
 	theDB.addPost(post)
@@ -248,13 +247,13 @@ func (req *Request) addThread() {
 	created := time.Now()
 	thread := &Thread{ID: bson.NewObjectId(),
 		Title:   title,
-		Author:  req.User.ID,
+		AuthorID:  req.User.ID,
 		Created: created}
 	theDB.addThread(thread)
 
 	post := &Post{ID: bson.NewObjectId(),
-		Thread:  thread.ID,
-		Author:  req.User.ID,
+		ThreadID:  thread.ID,
+		AuthorID:  req.User.ID,
 		Text:    text,
 		Created: created}
 	post = theDB.addPost(post)
@@ -282,28 +281,43 @@ func (req *Request) auth() (authed bool) {
 	if !bson.IsObjectIdHex(uid.Value) {
 		// too bad.
 		req.State.AuthState = InvalidID
-		http.SetCookie(req.W, &http.Cookie{Name: "nerdtalk-uid", Value: "", Expires: time.Now().AddDate(-1, 0, 0)})
-		http.SetCookie(req.W, &http.Cookie{Name: "nerdtalk-token", Value: "", Expires: time.Now().AddDate(-1, 0, 0)})
+		req.setCookies(true)
 		return
 	}
-	user := theDB.getUser(bson.ObjectId(uid.Value))
-	if user == nil {
+	user := theDB.getUser(bson.ObjectIdHex(uid.Value))
+	if user == nil || user.Name == "" {
 		//user invalid
 		req.State.AuthState = InvalidUser
-		http.SetCookie(req.W, &http.Cookie{Name: "nerdtalk-uid", Value: "", Expires: time.Now().AddDate(-1, 0, 0)})
-		http.SetCookie(req.W, &http.Cookie{Name: "nerdtalk-token", Value: "", Expires: time.Now().AddDate(-1, 0, 0)})
+		req.setCookies(true)
 		return
 	}
-	if user.AuthToken != tok.Value {
+	if tok.Value == "" || user.AuthToken != tok.Value {
 		//invalid auth token
 		req.State.AuthState = WrongToken
-		http.SetCookie(req.W, &http.Cookie{Name: "nerdtalk-token", Value: "", Expires: time.Now().AddDate(-1, 0, 0)})
+		req.setCookies(true)
 		return
 	}
 	req.User = user
 	req.State.AuthState = Valid
 	authed = true
 	return
+}
+
+func (req *Request) setCookies(remove bool) {
+	var uid, token string
+	var expire time.Time
+	if remove {
+		uid = ""
+		token = ""
+		expire = time.Now().AddDate(-1, 0, 0)
+	} else {
+		uid = req.User.ID.Hex()
+		token = req.User.AuthToken
+		expire = time.Now().AddDate(10, 0, 0)
+	}
+	domain := theSettings.Strings["cookies.domainName"]
+	http.SetCookie(req.W, &http.Cookie{Name: "nerdtalk-uid", Value: uid, Expires: expire, Domain: domain, Path: "/"})
+	http.SetCookie(req.W, &http.Cookie{Name: "nerdtalk-token", Value: token, Expires: expire, Domain: domain, Path: "/"})
 }
 
 func (req *Request) js(val interface{}) {
