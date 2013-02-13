@@ -22,6 +22,7 @@ func newDB(host, user, database, password string) *DB {
 		panic(err)
 	}
 	db.s.SetMode(mgo.Monotonic, true)
+
 	return db
 }
 
@@ -35,6 +36,17 @@ func (db *DB) getUser(id bson.ObjectId) *User {
 	err := c.Find(bson.M{"_id": id}).One(user)
 	if err != nil {
 		fmt.Println("User", id, "not found:", err)
+		return nil
+	}
+	return user
+}
+
+func (db *DB) getUserByName(name string) *User {
+	c := db.s.DB(db.name).C("User")
+	user := &User{}
+	err := c.Find(bson.M{"name": name}).One(user)
+	if err != nil {
+		fmt.Println("User", name, "not found:", err)
 		return nil
 	}
 	return user
@@ -102,4 +114,14 @@ func (db *DB) addPost(post *Post) *Post {
 		return nil
 	}
 	return post
+}
+
+func (db *DB) addUser(user *User) *User {
+	c := db.s.DB(db.name).C("User")
+	err := c.Insert(user)
+	if err != nil {
+		fmt.Println("User insert failed:", err)
+		return nil
+	}
+	return user
 }

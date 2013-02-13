@@ -12,6 +12,7 @@ import (
 const URLGet = "/get/"
 const URLAdd = "/add/"
 const URLFiddle = "/fiddle/"
+const URLLogin = "/login/"
 
 // runtime vars
 var theDB *DB
@@ -29,6 +30,7 @@ func main() {
 	http.HandleFunc(URLFiddle, fiddle)
 	http.HandleFunc(URLGet, api)
 	http.HandleFunc(URLAdd, api)
+	http.HandleFunc(URLLogin, login)
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -66,6 +68,7 @@ func defaults() {
 	if _, ok := s.Limits["thread.title.minLength"]; !ok {
 		s.Limits["thread.title.minLength"] = 5
 	}
+
 	// ...
 }
 
