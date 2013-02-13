@@ -3,6 +3,7 @@ package main
 import (
 	"labix.org/v2/mgo/bson"
 	"time"
+	"net/http"
 )
 
 type Thread struct {
@@ -24,6 +25,12 @@ type User struct {
 	ID     bson.ObjectId "_id"
 	Name   string
 	Joined time.Time
+}
+
+type Request struct {
+	User *User
+	W http.ResponseWriter
+	R *http.Request
 }
 
 type Settings struct {
