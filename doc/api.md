@@ -38,6 +38,12 @@ Possible Values:
 
 **TODO**: These expose too much info. Make Auth failures less verbose.
 
+## Parameters ##
+
+### ?redirect=true ###
+If this is specified, a successful _add_ request will not output its results in JSON but redirect to the appropriate page containing the new content.  
+This is used for non-javascript browsers.
+
 ## /get/ ##
 
 ### /get/post/<post id> ###
@@ -73,5 +79,5 @@ Adds a new user.
 **TODO**
 
 ### /add/like/<post ID> ##
-Adds a _Like_ to the given post. Returns the new post Like list.
+Adds a _Like_ to the given post. Returns the new post _Like_ list.
 **TODO** what happens if you double-like?
