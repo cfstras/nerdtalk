@@ -37,7 +37,7 @@ func main() {
 	http.HandleFunc(URLLogout, logout)
 	http.HandleFunc(URLPage, page)
 	http.HandleFunc(URLCSS, css)
-	
+
 	http.ListenAndServe(":8080", nil)
 }
 

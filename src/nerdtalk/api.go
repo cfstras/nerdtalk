@@ -8,9 +8,12 @@ import (
 	"html/template"
 	"labix.org/v2/mgo/bson"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 )
+
+var safeNameReplace = regexp.MustCompile(`[^0-9A-Za-z\-]+`)
 
 func fiddle(w http.ResponseWriter, r *http.Request) {
 	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
@@ -78,7 +81,7 @@ func (req *Request) getIDCheckLength(parts []string, requiredLength int) (id bso
 
 func login(w http.ResponseWriter, r *http.Request) {
 	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
-	
+
 	username := r.FormValue("User")
 	password := r.FormValue("Pass")
 	if username != "" && password != "" {
@@ -101,7 +104,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	
+
 	if req.State.AuthState == Valid {
 		req.setCookies(false)
 	} else if req.State.AuthState == Unknown {
@@ -161,73 +164,87 @@ func (req *Request) get(parts []string) {
 }
 
 func (req *Request) add(parts []string) {
+	var ret interface{}
+	var redirect string
 	switch parts[0] {
 	case "post":
 		if id, resume := req.getIDCheckLength(parts, 2); resume {
 			// add a post to thread id
-			req.addPost(id)
+			ret = req.addPost(id)
+			redirect = "/thread/" + id.Hex()
 		}
 	case "thread":
 		if resume := req.checkLength(parts, 1); resume {
-			req.addThread()
+			ret = req.addThread()
+			redirect = "/thread/" + ret.(Thread).ID.Hex()
 		}
 	case "user":
 		if resume := req.checkLength(parts, 1); resume {
-			req.addUser()
+			ret = req.addUser()
+			redirect = "/user/" + ret.(User).ID.Hex()
 		}
 	case "like":
-		if id, resume := req.getIDCheckLength(parts, 2); resume {
-			req.addLike(id)
+		if id, resume := req.getIDCheckLength(parts, 3); resume {
+			ret = req.addLike(id)
+			redirect = "/thread/" + parts[1]
 		}
 	default:
 		req.W.WriteHeader(404)
 		fmt.Fprintln(req.W, "This is not the query you're looking for!\nquery:", req.R.URL.Path)
+		return
+	}
+	if req.R.FormValue("redirect") == "true" {
+		//TODO if ret == nil, print on page
+		http.Redirect(req.W, req.R, redirect, http.StatusSeeOther)
+	} else {
+		req.js(ret)
 	}
 }
 
-func (req *Request) addUser() {
+func (req *Request) addUser() *User {
 	//generate auth token
 	//TODO
+	return nil
 }
 
-func (req *Request) addPost(threadID bson.ObjectId) {
+func (req *Request) addPost(threadID bson.ObjectId) *Post {
 	text := req.R.FormValue("Text")
 	if text == "" {
 		req.W.WriteHeader(400)
 		fmt.Println("No text:", req.R)
 		fmt.Fprintln(req.W, "We need a Text!")
-		return
+		return nil
 	}
 
 	if len(text) < theSettings.Limits["post.minLength"] {
 		req.W.WriteHeader(400)
 		fmt.Fprintln(req.W, "Post length must be at least", theSettings.Limits["post.minLength"])
-		return
+		return nil
 	}
 
 	created := time.Now()
 	post := &Post{ID: bson.NewObjectId(),
-		ThreadID:  threadID,
-		AuthorID:  req.User.ID,
-		Text:    text,
-		Created: created}
+		ThreadID: threadID,
+		AuthorID: req.User.ID,
+		Text:     text,
+		Created:  created}
 	theDB.addPost(post)
-	req.js(post)
+	return post
 }
 
-func (req *Request) addThread() {
+func (req *Request) addThread() bson.M {
 	title := req.R.FormValue("Title")
 	if title == "" {
 		req.W.WriteHeader(400)
 		fmt.Println("No Title:", req.R)
 		fmt.Fprintln(req.W, "We need one title!")
-		return
+		return nil
 	}
 
 	if len(title) < theSettings.Limits["thread.title.minLength"] {
 		req.W.WriteHeader(400)
 		fmt.Fprintln(req.W, "Title length must be at least", theSettings.Limits["thread.title.minLength"])
-		return
+		return nil
 	}
 
 	text := req.R.FormValue("Text")
@@ -235,37 +252,40 @@ func (req *Request) addThread() {
 		req.W.WriteHeader(400)
 		fmt.Println("No Text:", req.R)
 		fmt.Fprintln(req.W, "We need one Text!")
-		return
+		return nil
 	}
 
 	if len(text) < theSettings.Limits["post.minLength"] {
 		req.W.WriteHeader(400)
 		fmt.Fprintln(req.W, "Post length must be at least", theSettings.Limits["post.minLength"])
-		return
+		return nil
 	}
+
+	safeTitle := safeNameReplace.ReplaceAllString(title, "-")
 
 	created := time.Now()
 	thread := &Thread{ID: bson.NewObjectId(),
-		Title:   title,
+		Title:     title,
+		SafeTitle: safeTitle,
 		AuthorID:  req.User.ID,
-		Created: created}
+		Created:   created}
 	theDB.addThread(thread)
 
 	post := &Post{ID: bson.NewObjectId(),
-		ThreadID:  thread.ID,
-		AuthorID:  req.User.ID,
-		Text:    text,
-		Created: created}
+		ThreadID: thread.ID,
+		AuthorID: req.User.ID,
+		Text:     text,
+		Created:  created}
 	post = theDB.addPost(post)
-	req.js(thread)
-	req.js(post)
+	return bson.M{"thread": thread, "post": post}
 }
 
-func (req *Request) addLike(postID bson.ObjectId) {
+func (req *Request) addLike(postID bson.ObjectId) *Like {
 	like := &Like{User: req.User.ID, Time: time.Now()}
 	like = theDB.addPostLike(postID, like)
 	//TODO check return
 	//TODO output new post
+	return like
 }
 
 func (req *Request) auth() (authed bool) {

@@ -2,23 +2,22 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"time"
 	"html/template"
-	"strings"
-	"os"
 	"io"
+	"net/http"
+	"os"
+	"strings"
+	"time"
 )
 
 type Page struct {
-	Title string
+	Title   string
 	Threads []Thread
-	Thread *Thread
-	Posts []Post
-	User *User
-	Date time.Time
+	Thread  *Thread
+	Posts   []Post
+	User    *User
+	Date    time.Time
 }
-
 
 func page(w http.ResponseWriter, r *http.Request) {
 	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
@@ -30,9 +29,9 @@ func page(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "\nSorry, you can't do this. Maybe you should log in.")
 		return
 	}
-	
+
 	thePage := &Page{Title: "Nerdtalk - ?", Date: time.Now(), User: req.User}
-	thePage.Threads = theDB.getThreads(0,0)
+	thePage.Threads = theDB.getThreads(0, 0)
 	for i := 0; i < len(thePage.Threads); i++ {
 		thePage.Threads[i].Author = theDB.getUser(thePage.Threads[i].AuthorID)
 	}
@@ -43,7 +42,7 @@ func page(w http.ResponseWriter, r *http.Request) {
 			thePage.Posts[i].Author = theDB.getUser(thePage.Posts[i].AuthorID)
 		}
 	}
-	
+
 	err := template.Must(template.ParseFiles("html/page.html")).ExecuteTemplate(w, "page.html", thePage)
 	if err != nil {
 		fmt.Fprintln(w, "template render failed")
@@ -52,8 +51,8 @@ func page(w http.ResponseWriter, r *http.Request) {
 }
 
 func css(w http.ResponseWriter, r *http.Request) {
-	path := strings.Replace(r.URL.Path[len(URLCSS):],"..","",-1)
-	f, err := os.Open("css/"+path)
+	path := strings.Replace(r.URL.Path[len(URLCSS):], "..", "", -1)
+	f, err := os.Open("css/" + path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			w.WriteHeader(404)
@@ -64,11 +63,11 @@ func css(w http.ResponseWriter, r *http.Request) {
 		} else {
 			w.WriteHeader(500)
 			fmt.Fprintln(w, "Server error.")
-			fmt.Println("Error reading file:",err)
+			fmt.Println("Error reading file:", err)
 		}
 		return
 	}
 	defer f.Close()
 	w.Header().Add("Content-Type", "text/css")
-	io.Copy(w,f)
+	io.Copy(w, f)
 }

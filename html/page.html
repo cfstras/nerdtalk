@@ -12,13 +12,13 @@
 </header>
 <div id="threadbar"><aside><nav>
 	{{range .Threads}}<div class="threadentry" id="{{.ID.Hex}}">
-		<a href="/thread/{{.ID.Hex}}-{{.SafeTitle}}"><span class="title">{{.Title}}</span></a>
-		<a href="/user/{{.Author.ID.Hex}}-{{.Author.Nick}}"><span class="author" id="{{.Author.ID.Hex}}">{{.Author.Name}}</span></a>
+		<a href="/thread/{{.ID.Hex}}/{{.SafeTitle}}"><span class="title">{{.Title}}</span></a>
+		<a href="/user/{{.Author.ID.Hex}}/{{.Author.Nick}}"><span class="author" id="{{.Author.ID.Hex}}">{{.Author.Name}}</span></a>
 		<!-- //TODO: add post count n stuff -->
 	</div>{{end}}
 </nav></aside></div>
 <div id="thread"><section>
-	<a href="/thread/{{.Thread.ID.Hex}}-{{.Thread.SafeTitle}}"><h2 class="threadheader">{{.Thread.Title}}</h2></a>
+	<a href="/thread/{{.Thread.ID.Hex}}/{{.Thread.SafeTitle}}"><h2 class="threadheader">{{.Thread.Title}}</h2></a>
 	{{range .Posts}}<article><div class="post" id="{{.ID.Hex}}">
 		<span class="text">{{.Text}}</span>
 		<aside><footer><div class="info">

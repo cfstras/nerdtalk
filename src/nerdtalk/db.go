@@ -7,9 +7,7 @@ import (
 	"time"
 )
 
-const (
-	
-)
+//TODO cache requests
 
 type DB struct {
 	s    *mgo.Session
@@ -41,7 +39,7 @@ func (db *DB) getUser(id bson.ObjectId) *User {
 	err := c.Find(bson.M{"_id": id}).One(user)
 	if err != nil {
 		fmt.Println("User", id, "not found:", err)
-		return &User{ID: id, Name:"Unknown User", Nick:"unknown", Joined: time.Unix(0,0)}
+		return &User{ID: id, Name: "Unknown User", Nick: "unknown", Joined: time.Unix(0, 0)}
 	}
 	return user
 }
