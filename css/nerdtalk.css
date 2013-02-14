@@ -4,44 +4,64 @@
 	/* Reset browsers default margin, padding and font sizes */
 	margin: 0;
 	padding: 0;
+}
+
+body {
 	font-family:Verdana;
+}
+
+p {
+	margin-bottom: 1em;
 }
 
 #wrap {
 	width: 100%;
 	min-height: 100%;
 	
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	overflow: hidden;
 }
 
 #threadbar {
-	padding: 1em 1em 1em 1em;
 	margin: 0.5em 1em 0.5em 0.5em;
 	float: left;
-	position: static;
-	height: 100%;
-	border: 1px dashed;
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	border: 1px solid;
 	width: 15%;
 	min-width: 10em;
 }
 
 .threadentry {
-	background-color: rgb(223, 224, 235);
+	background-color: rgb(235, 240, 240);
+	padding: 0.5em;
+	margin: 0.5em;
+}
+
+.author {
+	float:right;
+	
 }
 
 #thread {
 	min-width: 40em;
-	width: 75%;
-	float: right
+	position: absolute;
+	left: 18%;
+	right: 0;
 }
 
 .threadheader {
-	background-color: rgb(223, 224, 235);
+	background-color: rgb(235, 240, 240);
 	margin: 0.5em 0.5em 0.5em 0em;
 	padding: 0.2em 0.5em 0.2em 0.5em;
 }
 
 .post {
-	background-color: rgb(233, 234, 245);
+	background-color: rgb(230, 240, 240);
 	margin: 0.5em 0.5em 0.5em 0em;
 	padding: 0.5em 0.5em 0.2em 0.5em;
 	display: block;
@@ -50,7 +70,7 @@
 	border-top-left-radius: 0.5em;
 	border-bottom-left-radius: 1.0em;
 	border-bottom-right-radius: 0.5em;
-	border-left: 1px dashed;
+	border-left: 1px solid rgb(50, 50, 100);
 }
 
 .textbox {

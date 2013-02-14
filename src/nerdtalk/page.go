@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	md "github.com/russross/blackfriday"
 	"html/template"
 	"io"
+	"labix.org/v2/mgo/bson"
 	"net/http"
 	"os"
 	"strings"
@@ -14,10 +16,31 @@ type Page struct {
 	Title   string
 	Threads []Thread
 	Thread  *Thread
-	Posts   []Post
+	Posts   []*PagePost
 	User    *User
 	Date    time.Time
 }
+
+type PagePost struct {
+	ID      bson.ObjectId
+	Author  *User
+	Created time.Time
+	Likes   *[]Like
+	Text    template.HTML
+}
+
+var theMD = md.HtmlRenderer(md.HTML_USE_SMARTYPANTS|
+	md.HTML_SMARTYPANTS_LATEX_DASHES|
+	md.HTML_SMARTYPANTS_FRACTIONS, "", "")
+
+var mdExtensions int = md.EXTENSION_HARD_LINE_BREAK |
+	md.EXTENSION_NO_INTRA_EMPHASIS |
+	md.EXTENSION_TABLES |
+	md.EXTENSION_FENCED_CODE |
+	md.EXTENSION_AUTOLINK |
+	md.EXTENSION_STRIKETHROUGH |
+	md.EXTENSION_SPACE_HEADERS |
+	md.EXTENSION_LAX_HTML_BLOCKS
 
 func page(w http.ResponseWriter, r *http.Request) {
 	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
@@ -37,10 +60,15 @@ func page(w http.ResponseWriter, r *http.Request) {
 	}
 	if thePage.Threads != nil && len(thePage.Threads) > 0 {
 		thePage.Thread = &thePage.Threads[0]
-		thePage.Title += " - "+thePage.Thread.Title
-		thePage.Posts = theDB.getPosts(thePage.Thread.ID, 0, 0)
-		for i := 0; i < len(thePage.Posts); i++ {
-			thePage.Posts[i].Author = theDB.getUser(thePage.Posts[i].AuthorID)
+		thePage.Title += " - " + thePage.Thread.Title
+		posts := theDB.getPosts(thePage.Thread.ID, 0, 0)
+		thePage.Posts = make([]*PagePost, len(posts))
+		for i, post := range posts {
+			thePage.Posts[i] = &PagePost{Text: template.HTML(md.Markdown([]byte(post.Text), theMD, mdExtensions)),
+				ID:      post.ID,
+				Author:  theDB.getUser(post.AuthorID),
+				Created: post.Created,
+				Likes:   &post.Likes}
 		}
 	}
 
