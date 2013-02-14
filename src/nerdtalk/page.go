@@ -30,13 +30,14 @@ func page(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	thePage := &Page{Title: "Nerdtalk - ?", Date: time.Now(), User: req.User}
+	thePage := &Page{Title: "nerdtalk", Date: time.Now(), User: req.User}
 	thePage.Threads = theDB.getThreads(0, 0)
 	for i := 0; i < len(thePage.Threads); i++ {
 		thePage.Threads[i].Author = theDB.getUser(thePage.Threads[i].AuthorID)
 	}
 	if thePage.Threads != nil && len(thePage.Threads) > 0 {
 		thePage.Thread = &thePage.Threads[0]
+		thePage.Title += " - "+thePage.Thread.Title
 		thePage.Posts = theDB.getPosts(thePage.Thread.ID, 0, 0)
 		for i := 0; i < len(thePage.Posts); i++ {
 			thePage.Posts[i].Author = theDB.getUser(thePage.Posts[i].AuthorID)

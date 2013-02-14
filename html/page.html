@@ -10,30 +10,30 @@
 <header>
 <!-- //TODO user info, login/out button... -->
 </header>
-<div id="threadbar"><aside><nav>
+<div id="threadbar"><!--<aside><nav>-->
 	{{range .Threads}}<div class="threadentry" id="{{.ID.Hex}}">
-		<a href="/thread/{{.ID.Hex}}/{{.SafeTitle}}"><span class="title">{{.Title}}</span></a>
+		<span class="title"><a href="/thread/{{.ID.Hex}}/{{.SafeTitle}}">{{.Title}}</a></span>
 		<a href="/user/{{.Author.ID.Hex}}/{{.Author.Nick}}"><span class="author" id="{{.Author.ID.Hex}}">{{.Author.Name}}</span></a>
 		<!-- //TODO: add post count n stuff -->
 	</div>{{end}}
-</nav></aside></div>
-<div id="thread"><section>
-	<a href="/thread/{{.Thread.ID.Hex}}/{{.Thread.SafeTitle}}"><h2 class="threadheader">{{.Thread.Title}}</h2></a>
-	{{range .Posts}}<article><div class="post" id="{{.ID.Hex}}">
-		<span class="text">{{.Text}}</span>
-		<aside><footer><div class="info">
+<!--</nav></aside>--></div>
+<div id="thread"><!--<section>-->
+	<h2 class="threadheader"><a href="/thread/{{.Thread.ID.Hex}}/{{.Thread.SafeTitle}}">{{.Thread.Title}}</a></h2>
+	{{range .Posts}}<!--<article>--><div class="post" id="{{.ID.Hex}}">
+		<!--<aside><footer>--><div class="info">
 			<span class="author">{{.Author.Name}}</span>
 			<span class="date">{{.Created}}</span>
 			<span class="likes">Likes: {{len .Likes}}</span>
-		</div></footer></aside>
-	</div></article>{{end}}
+		</div><!--</footer></aside>-->
+		<div class="textbox">{{.Text}}</div>
+	</div><!--</article>-->{{end}}
 	<div id="postbox">
 		<form action="/add/post/{{.Thread.ID.Hex}}?redirect=true" method="POST">
 			<textarea name="Text" cols="50" rows="5"></textarea>
-			<input type="submit" value="Post"></input>
+			<input type="submit" value="Post">
 		</form>
 	</div>
-</section></div>
+<!--</section>--></div>
 </div>
 </body>
 </html>

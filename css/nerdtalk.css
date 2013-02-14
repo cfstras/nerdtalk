@@ -43,12 +43,28 @@
 .post {
 	background-color: rgb(233, 234, 245);
 	margin: 0.5em 0.5em 0.5em 0em;
-	padding: 0.2em 0.5em 0.2em 0.5em;
+	padding: 0.5em 0.5em 0.2em 0.5em;
+	display: block;
+	
+	border-top-right-radius: 1.0em;
+	border-top-left-radius: 0.5em;
+	border-bottom-left-radius: 1.0em;
+	border-bottom-right-radius: 0.5em;
+	border-left: 1px dashed;
+}
+
+.textbox {
+	width: 80%;
+	min-height: 3em;
+	word-wrap: break-word;
 }
 
 .info {
 	float: right;
-	
+	display: inline;
+	width: 20%;
+	padding-left: 0.5em;
+	border-left: 1px solid white;
 }
 
 #postbox {
