@@ -61,11 +61,15 @@ func (req *Request) checkLength(parts []string, requiredLength int) bool {
 }
 
 func (req *Request) getIDCheckLength(parts []string, requiredLength int) (id bson.ObjectId, resume bool) {
+	return req.getIDCheckLengthFrom(parts, requiredLength, requiredLength-1)
+}
+
+func (req *Request) getIDCheckLengthFrom(parts []string, requiredLength int, idPos int) (id bson.ObjectId, resume bool) {
 	if resume = req.checkLength(parts, requiredLength); !resume {
 		return
 	}
 
-	idString := parts[requiredLength-1]
+	idString := parts[idPos]
 	if !bson.IsObjectIdHex(idString) {
 		req.W.WriteHeader(404)
 		fmt.Println("Not an object id:", idString)

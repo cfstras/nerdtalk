@@ -43,40 +43,68 @@ var mdExtensions int = md.EXTENSION_HARD_LINE_BREAK |
 	md.EXTENSION_LAX_HTML_BLOCKS
 
 func page(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r)
 	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
 	//TODO fine-grained access
 	if !req.auth() {
-		w.WriteHeader(404)
+		w.WriteHeader(403) //TODO: Internet explorer sees this as "the server is bad, let's confuse the user"
 		req.State.String()
 		req.js(req.State)
 		fmt.Fprintln(w, "\nSorry, you can't do this. Maybe you should log in.")
 		return
 	}
+	
+	// find out what the user wants
+	parts := strings.Split(strings.TrimLeft(r.URL.Path, "/"), "/")
+	switch parts[0] {
+	case "user":
+		//TODO display info about user
+	case "thread":
+		if id, resume := req.getIDCheckLengthFrom(parts, 3, 1); resume {
+			req.showThread(id)
+		}
+	default:
+		req.showThread("")
+	}
+	
+}
+
+func (req *Request) showThread(id bson.ObjectId) {
 
 	thePage := &Page{Title: "nerdtalk", Date: time.Now(), User: req.User}
 	thePage.Threads = theDB.getThreads(0, 0)
 	for i := 0; i < len(thePage.Threads); i++ {
 		thePage.Threads[i].Author = theDB.getUser(thePage.Threads[i].AuthorID)
 	}
-	if thePage.Threads != nil && len(thePage.Threads) > 0 {
-		thePage.Thread = &thePage.Threads[0]
-		thePage.Title += " - " + thePage.Thread.Title
-		posts := theDB.getPosts(thePage.Thread.ID, 0, 0)
-		thePage.Posts = make([]*PagePost, len(posts))
-		for i, post := range posts {
-			thePage.Posts[i] = &PagePost{Text: template.HTML(md.Markdown([]byte(post.Text), theMD, mdExtensions)),
-				ID:      post.ID,
-				Author:  theDB.getUser(post.AuthorID),
-				Created: post.Created,
-				Likes:   &post.Likes}
-		}
-	}
+	
 
-	err := template.Must(template.ParseFiles("html/page.html")).ExecuteTemplate(w, "page.html", thePage)
+	if id == "" {
+		if thePage.Threads != nil && len(thePage.Threads) > 0 {
+			thePage.Thread = &thePage.Threads[0]
+		} else {
+			//TODO?
+		}
+	} else {
+		thePage.Thread = theDB.getThread(id)
+	}
+	
+	thePage.Title += " - " + thePage.Thread.Title
+	posts := theDB.getPosts(thePage.Thread.ID, 0, 0)
+	thePage.Posts = make([]*PagePost, len(posts))
+	for i, post := range posts {
+		thePage.Posts[i] = &PagePost{Text: template.HTML(md.Markdown([]byte(post.Text), theMD, mdExtensions)),
+			ID:      post.ID,
+			Author:  theDB.getUser(post.AuthorID),
+			Created: post.Created,
+			Likes:   &post.Likes}
+	}
+	
+	err := template.Must(template.ParseFiles("html/page.html")).ExecuteTemplate(req.W, "page.html", thePage)
 	if err != nil {
-		fmt.Fprintln(w, "template render failed")
+		fmt.Fprintln(req.W, "template render failed")
 		fmt.Println("Template error:", err)
 	}
+	
 }
 
 func css(w http.ResponseWriter, r *http.Request) {
