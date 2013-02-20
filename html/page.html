@@ -8,7 +8,23 @@
 <body>
 <div id="wrap">
 <header>
+<div id="headbar">
+	<div id="userinfo">
+	{{if .User}}
+		logged in as <a href="/user/{{.User.Nick}}">{{.User.Name}}</a>
+		<form id="logout" action="/logout" method="POST">
+		<input type="hidden" name="redirect" value="true" />
+		<input type="submit" value="logout" /></form>
+	{{else}}
+	<form id="Login" action="/login/" method="POST">
+		Nick: <input type="text" name="Nick" />
+		Pass: <input type="password" name="Password" />
+		<input type="hidden" name="redirect" value="true" />
+		<input type="submit" value="Go" /></form>
+	{{end}}
+	</div>
 <!-- //TODO user info, login/out button... -->
+</div>
 </header>
 <div id="threadbar"><nav>
 	{{range .Threads}}<div class="threadentry" id="{{.ID.Hex}}">

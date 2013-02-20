@@ -37,8 +37,8 @@ func (db *DB) getUser(id bson.ObjectId) *User {
 	c := db.s.DB(db.name).C("User")
 	user := &User{}
 	err := c.Find(bson.M{"_id": id}).One(user)
-	if err != nil {
-		fmt.Println("User", id, "not found:", err)
+	if err != nil && err != mgo.ErrNotFound {
+		fmt.Println("getUser", id, ":", err)
 		return &User{ID: id, Name: "Unknown User", Nick: "unknown", Joined: time.Unix(0, 0)}
 	}
 	return user

@@ -25,11 +25,27 @@ p {
 	overflow: hidden;
 }
 
+#headbar {
+	position: static;
+	top: 0;
+	
+}
+
+#userinfo {
+	float: right;
+	padding: 0.5em 0.5em 0.2em 1em;
+}
+
+#logout {
+	display: inline;
+	
+}
+
 #threadbar {
 	margin: 0.5em 1em 0.5em 0.5em;
 	float: left;
 	position: fixed;
-	top: 0;
+	top: 2em;
 	bottom: 0;
 	border: 1px solid;
 	width: 18.5em;
@@ -53,6 +69,7 @@ p {
 	position: absolute;
 	left: 20em;
 	right: 0;
+	top: 2em;
 }
 
 .threadheader {

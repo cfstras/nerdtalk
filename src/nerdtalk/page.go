@@ -46,13 +46,7 @@ func page(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r)
 	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
 	//TODO fine-grained access
-	if !req.auth() {
-		w.WriteHeader(403) //TODO: Internet explorer sees this as "the server is bad, let's confuse the user"
-		req.State.String()
-		req.js(req.State)
-		fmt.Fprintln(w, "\nSorry, you can't do this. Maybe you should log in.")
-		return
-	}
+	req.auth()
 
 	// find out what the user wants
 	parts := strings.Split(strings.TrimLeft(r.URL.Path, "/"), "/")
@@ -63,6 +57,9 @@ func page(w http.ResponseWriter, r *http.Request) {
 		if id, resume := req.getIDCheckLengthFrom(parts, 3, 1); resume {
 			req.showThread(id)
 		}
+	case "favicon.ico":
+		req.W.WriteHeader(404)
+		return
 	default:
 		req.showThread("")
 	}

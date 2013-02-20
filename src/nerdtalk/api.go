@@ -14,6 +14,7 @@ import (
 var safeNameReplace = regexp.MustCompile(`[^0-9A-Za-z\-]+`)
 
 func fiddle(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r)
 	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
 	req.auth()
 	err := template.Must(template.ParseFiles("html/fiddle.html")).ExecuteTemplate(w, "fiddle.html", req)
@@ -25,9 +26,17 @@ func fiddle(w http.ResponseWriter, r *http.Request) {
 }
 
 func api(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r)
 	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
 	// user is trying to access api, he better have his passport
-	req.auth()
+	if !req.auth() {
+		w.WriteHeader(404)
+		req.State.String()
+		req.js(req.State)
+		fmt.Fprintln(w, "\nSorry, you can't do this. Maybe you should log in.")
+		return
+	}
+
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 
 	switch parts[0] {
@@ -75,13 +84,14 @@ func (req *Request) getIDCheckLengthFrom(parts []string, requiredLength int, idP
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r)
 	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
 
-	username := r.FormValue("User")
-	password := r.FormValue("Pass")
-	if username != "" && password != "" {
+	nickname := r.FormValue("Nick")
+	password := r.FormValue("Password")
+	if nickname != "" && password != "" {
 		// User&pass auth
-		user := theDB.getUserByNick(username)
+		user := theDB.getUserByNick(nickname)
 		if user == nil {
 			req.State.AuthState = InvalidUser
 		} else {
@@ -96,6 +106,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 				req.User = user
 			}
 		}
+	} else {
+		fmt.Fprintln(req.W, "Please provide Nick and Password")
 	}
 
 	if req.State.AuthState == Valid {
@@ -104,14 +116,18 @@ func login(w http.ResponseWriter, r *http.Request) {
 		req.auth()
 	}
 	req.State.String()
-	req.js(req.State)
+	if req.R.FormValue("redirect") == "true" {
+		http.Redirect(req.W, req.R, "/", http.StatusSeeOther)
+	} else {
+		req.js(req.State)
+	}
 
 	//TODO OpenID (also for logout)
-	//TODO save as session in list, add session id
-
+	//TODO save as session in list, add session id (?)
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r)
 	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
 	authed := req.auth()
 	if authed {
@@ -123,9 +139,15 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	// clear cookies
 	req.setCookies(true)
 	req.User = nil
+	req.Permissions = PNone
 	req.State.AuthState = Unknown
 	req.State.String()
-	req.js(req.State)
+	if req.R.FormValue("redirect") == "true" {
+		http.Redirect(req.W, req.R, "/", http.StatusSeeOther)
+	} else {
+		req.js(req.State)
+	}
+	
 }
 
 func (req *Request) get(parts []string) {
@@ -339,7 +361,7 @@ func (req *Request) addThread() bson.M {
 }
 
 func (req *Request) addLike(postID bson.ObjectId) *Like {
-	if req.Permissions & PLogin != PLogin {
+	if req.Permissions&PLogin != PLogin {
 		fmt.Fprintln(req.W, "Sorry, you can't do this.")
 		return nil
 	}
