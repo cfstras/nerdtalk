@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"math/rand"
 	"time"
 )
@@ -20,4 +22,10 @@ func RandString(length int) string {
 		r[i] = authRandomChars[random.Intn(len(authRandomChars))]
 	}
 	return string(r)
+}
+
+func Sha256(s string) string {
+	hasher := sha256.New()
+	hasher.Write([]byte(s))
+	return hex.EncodeToString(hasher.Sum(nil))
 }

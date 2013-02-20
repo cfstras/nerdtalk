@@ -44,12 +44,12 @@ func (db *DB) getUser(id bson.ObjectId) *User {
 	return user
 }
 
-func (db *DB) getUserByName(name string) *User {
+func (db *DB) getUserByNick(name string) *User {
 	c := db.s.DB(db.name).C("User")
 	user := &User{}
-	err := c.Find(bson.M{"name": name}).One(user)
-	if err != nil {
-		fmt.Println("User", name, "not found:", err)
+	err := c.Find(bson.M{"nick": name}).One(user)
+	if err != nil && err != mgo.ErrNotFound {
+		fmt.Println("getUserByNick", name, ":", err)
 		return nil
 	}
 	return user
@@ -119,14 +119,24 @@ func (db *DB) addPost(post *Post) *Post {
 	return post
 }
 
-func (db *DB) addUser(user *User) *User {
+// Adds a new User to the database.
+// If there is already a user with the same nickname, (nil, true) is returned
+// On error, (nil, false) is returned
+// On success, (user, false) is returned.
+func (db *DB) addUser(user *User) (ret *User, duplicate bool) {
 	c := db.s.DB(db.name).C("User")
+	useralt := db.getUserByNick(user.Nick)
+	if useralt != nil {
+		duplicate = true
+		return
+	}
 	err := c.Insert(user)
 	if err != nil {
 		fmt.Println("User insert failed:", err)
-		return nil
+		return
 	}
-	return user
+	ret = user
+	return
 }
 
 func (db *DB) setUserToken(user *User, newToken string) *User {

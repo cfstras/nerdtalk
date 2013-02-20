@@ -53,7 +53,7 @@ func page(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "\nSorry, you can't do this. Maybe you should log in.")
 		return
 	}
-	
+
 	// find out what the user wants
 	parts := strings.Split(strings.TrimLeft(r.URL.Path, "/"), "/")
 	switch parts[0] {
@@ -66,7 +66,7 @@ func page(w http.ResponseWriter, r *http.Request) {
 	default:
 		req.showThread("")
 	}
-	
+
 }
 
 func (req *Request) showThread(id bson.ObjectId) {
@@ -76,7 +76,6 @@ func (req *Request) showThread(id bson.ObjectId) {
 	for i := 0; i < len(thePage.Threads); i++ {
 		thePage.Threads[i].Author = theDB.getUser(thePage.Threads[i].AuthorID)
 	}
-	
 
 	if id == "" {
 		if thePage.Threads != nil && len(thePage.Threads) > 0 {
@@ -87,7 +86,7 @@ func (req *Request) showThread(id bson.ObjectId) {
 	} else {
 		thePage.Thread = theDB.getThread(id)
 	}
-	
+
 	thePage.Title += " - " + thePage.Thread.Title
 	posts := theDB.getPosts(thePage.Thread.ID, 0, 0)
 	thePage.Posts = make([]*PagePost, len(posts))
@@ -98,13 +97,13 @@ func (req *Request) showThread(id bson.ObjectId) {
 			Created: post.Created,
 			Likes:   &post.Likes}
 	}
-	
+
 	err := template.Must(template.ParseFiles("html/page.html")).ExecuteTemplate(req.W, "page.html", thePage)
 	if err != nil {
 		fmt.Fprintln(req.W, "template render failed")
 		fmt.Println("Template error:", err)
 	}
-	
+
 }
 
 func css(w http.ResponseWriter, r *http.Request) {

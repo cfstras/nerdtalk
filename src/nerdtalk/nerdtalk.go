@@ -75,6 +75,13 @@ func defaults() {
 	if _, ok := s.Limits["thread.title.minLength"]; !ok {
 		s.Limits["thread.title.minLength"] = 5
 	}
+	if _, ok := s.Limits["thread.title.safeMaxLength"]; !ok {
+		s.Limits["thread.title.safeMaxLength"] = 20
+	}
+	if _, ok := s.Limits["user.default.permissions"]; !ok {
+		s.Limits["user.default.permissions"] = int(PLogin)
+	}
+	
 	if _, ok := s.Strings["cookies.domainName"]; !ok {
 		s.Strings["cookies.domainName"] = ""
 	}

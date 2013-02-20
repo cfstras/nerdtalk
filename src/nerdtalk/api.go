@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -29,14 +27,7 @@ func fiddle(w http.ResponseWriter, r *http.Request) {
 func api(w http.ResponseWriter, r *http.Request) {
 	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
 	// user is trying to access api, he better have his passport
-	if !req.auth() {
-		w.WriteHeader(404)
-		req.State.String()
-		req.js(req.State)
-		fmt.Fprintln(w, "\nSorry, you can't do this. Maybe you should log in.")
-		return
-	}
-
+	req.auth()
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 
 	switch parts[0] {
@@ -90,13 +81,11 @@ func login(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("Pass")
 	if username != "" && password != "" {
 		// User&pass auth
-		user := theDB.getUserByName(username)
+		user := theDB.getUserByNick(username)
 		if user == nil {
 			req.State.AuthState = InvalidUser
 		} else {
-			hasher := sha256.New()
-			hasher.Write([]byte(password))
-			sha := hex.EncodeToString(hasher.Sum(nil))
+			sha := Sha256(password)
 			if sha != user.PasswordSHA {
 				// wrong password.
 				req.State.AuthState = WrongPassword
@@ -206,12 +195,52 @@ func (req *Request) add(parts []string) {
 }
 
 func (req *Request) addUser() *User {
-	//generate auth token
-	//TODO
-	return nil
+	name := req.R.FormValue("Name")
+	nick := req.R.FormValue("Nick")
+	pass := req.R.FormValue("Password")
+	if name == "" || nick == "" || pass == "" {
+		req.W.WriteHeader(400)
+		fmt.Fprintln(req.W, "Please supply Name, Nick and Password!")
+		return nil
+	}
+	user := &User{
+		ID:          bson.NewObjectId(),
+		Name:        name,
+		Nick:        nick,
+		Joined:      time.Now(),
+		AuthToken:   RandString(32),
+		PasswordSHA: Sha256(pass),
+		Permissions: Permission(theSettings.Limits["user.default.permissions"])}
+	//TODO captcha
+	user, dup := theDB.addUser(user)
+	if dup {
+		fmt.Fprintln(req.W, "Sorry, a user with that nickname already exists.")
+		return nil
+	}
+	if user == nil {
+		fmt.Fprintln(req.W, "Sorry, an error occured.")
+		return nil
+	}
+	return user
 }
 
 func (req *Request) addPost(threadID bson.ObjectId) *Post {
+	//get thread
+	thread := theDB.getThread(threadID)
+	if thread == nil {
+		req.W.WriteHeader(400)
+		fmt.Println("Tried to post into unknown thread", req)
+		fmt.Fprintln(req.W, "Sorry, I couldn't find that thread!")
+		return nil
+	}
+	if (!thread.Internal && req.Permissions&PPost != PPost) ||
+		(thread.Internal && req.Permissions&PPostInternal != PPostInternal) {
+		req.W.WriteHeader(403)
+		fmt.Println("User tried to post into thread he's not allowed to post!", req)
+		fmt.Fprintln(req.W, "Sorry, you're not allowed to post into this thread")
+		return nil
+	}
+
 	text := req.R.FormValue("Text")
 	if text == "" {
 		req.W.WriteHeader(400)
@@ -237,11 +266,32 @@ func (req *Request) addPost(threadID bson.ObjectId) *Post {
 }
 
 func (req *Request) addThread() bson.M {
+
 	title := req.R.FormValue("Title")
 	if title == "" {
 		req.W.WriteHeader(400)
 		fmt.Println("No Title:", req.R)
 		fmt.Fprintln(req.W, "We need one title!")
+		return nil
+	}
+
+	internalS := req.R.FormValue("Internal")
+	internal := false
+	if internalS != "" {
+		if strings.ToLower(internalS) == "true" {
+			internal = true
+		} else {
+			req.W.WriteHeader(400)
+			fmt.Fprintf(req.W, "Bad Request.")
+			return nil
+		}
+	}
+
+	if (!internal && req.Permissions&PPost != PPost) ||
+		(internal && req.Permissions&PPostInternal != PPostInternal) {
+		req.W.WriteHeader(403)
+		fmt.Println("User tried to create thread he's not allowed to post!", req)
+		fmt.Fprintln(req.W, "Sorry, you're not allowed to create a thread here.")
 		return nil
 	}
 
@@ -266,6 +316,10 @@ func (req *Request) addThread() bson.M {
 	}
 
 	safeTitle := safeNameReplace.ReplaceAllString(title, "-")
+	maxl := theSettings.Limits["thread.title.safeMaxLength"]
+	if len(safeTitle) > maxl {
+		safeTitle = safeTitle[:maxl]
+	}
 
 	created := time.Now()
 	thread := &Thread{ID: bson.NewObjectId(),
@@ -285,10 +339,15 @@ func (req *Request) addThread() bson.M {
 }
 
 func (req *Request) addLike(postID bson.ObjectId) *Like {
+	if req.Permissions & PLogin != PLogin {
+		fmt.Fprintln(req.W, "Sorry, you can't do this.")
+		return nil
+	}
 	like := &Like{User: req.User.ID, Time: time.Now()}
 	like = theDB.addPostLike(postID, like)
 	//TODO check return
 	//TODO output new post
+	//TODO check auth for like
 	return like
 }
 
@@ -315,6 +374,7 @@ func (req *Request) auth() (authed bool) {
 		req.setCookies(true)
 		return
 	}
+	//TODO use HMAC for authenticating keys (gorilla)
 	if tok.Value == "" || user.AuthToken != tok.Value {
 		//invalid auth token
 		req.State.AuthState = WrongToken
@@ -322,6 +382,7 @@ func (req *Request) auth() (authed bool) {
 		return
 	}
 	req.User = user
+	req.Permissions = user.Permissions
 	req.State.AuthState = Valid
 	authed = true
 	return
