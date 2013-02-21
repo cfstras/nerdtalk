@@ -18,7 +18,7 @@ const URLPage = "/"
 const URLCSS = "/css/"
 
 // runtime vars
-var theDB *DB
+var theDB DBSession
 var theSettings *Settings
 
 func main() {

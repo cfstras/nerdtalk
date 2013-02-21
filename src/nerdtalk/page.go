@@ -69,9 +69,11 @@ func page(w http.ResponseWriter, r *http.Request) {
 func (req *Request) showThread(id bson.ObjectId) {
 
 	thePage := &Page{Title: "nerdtalk", Date: time.Now(), User: req.User}
-	thePage.Threads = theDB.getThreads(0, 0)
+	conn := theDB.getCopy(req, "nerdtalk")
+	defer conn.close()
+	thePage.Threads = conn.getThreads(0, 0)
 	for i := 0; i < len(thePage.Threads); i++ {
-		thePage.Threads[i].Author = theDB.getUser(thePage.Threads[i].AuthorID)
+		thePage.Threads[i].Author = conn.getUser(thePage.Threads[i].AuthorID)
 	}
 
 	if id == "" {
@@ -81,18 +83,19 @@ func (req *Request) showThread(id bson.ObjectId) {
 			//TODO?
 		}
 	} else {
-		thePage.Thread = theDB.getThread(id)
+		thePage.Thread = conn.getThread(id)
 	}
 
 	thePage.Title += " - " + thePage.Thread.Title
-	posts := theDB.getPosts(thePage.Thread.ID, 0, 0)
+	posts := conn.getPosts(thePage.Thread.ID, 0, 0)
 	thePage.Posts = make([]*PagePost, len(posts))
 	for i, post := range posts {
 		thePage.Posts[i] = &PagePost{Text: template.HTML(md.Markdown([]byte(post.Text), theMD, mdExtensions)),
 			ID:      post.ID,
-			Author:  theDB.getUser(post.AuthorID),
+			Author:  conn.getUser(post.AuthorID),
 			Created: post.Created,
 			Likes:   &post.Likes}
+		//TODO replace this with a map?
 	}
 
 	err := template.Must(template.ParseFiles("html/page.html")).ExecuteTemplate(req.W, "page.html", thePage)

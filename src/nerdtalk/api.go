@@ -91,7 +91,9 @@ func login(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("Password")
 	if nickname != "" && password != "" {
 		// User&pass auth
-		user := theDB.getUserByNick(nickname)
+		conn := theDB.getCopy(req, "nerdtalk")
+		defer conn.close()
+		user := conn.getUserByNick(nickname)
 		if user == nil {
 			req.State.AuthState = InvalidUser
 		} else {
@@ -109,7 +111,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	} else {
 		fmt.Fprintln(req.W, "Please provide Nick and Password")
 	}
-
+	//TODO check PLogin permission!
 	if req.State.AuthState == Valid {
 		req.setCookies(false)
 	} else if req.State.AuthState == Unknown {
@@ -132,7 +134,9 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	authed := req.auth()
 	if authed {
 		newToken := RandString(32)
-		theDB.setUserToken(req.User, newToken)
+		conn := theDB.getCopy(req, "nerdtalk")
+		defer conn.close()
+		conn.setUserToken(req.User, newToken)
 		//TODO check result
 		// don't return the new authtoken!
 	}
@@ -151,26 +155,28 @@ func logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (req *Request) get(parts []string) {
+	conn := theDB.getCopy(req, "nerdtalk")
+	defer conn.close()
 	switch parts[0] {
 	case "post":
 		if id, resume := req.getIDCheckLength(parts, 2); resume {
-			req.js(theDB.getPost(id))
+			req.js(conn.getPost(id))
 		}
 	case "posts":
 		if id, resume := req.getIDCheckLength(parts, 2); resume {
-			req.js(theDB.getPosts(id, 0, 0))
+			req.js(conn.getPosts(id, 0, 0))
 		}
 	case "threads":
 		if resume := req.checkLength(parts, 1); resume {
-			req.js(theDB.getThreads(0, 0))
+			req.js(conn.getThreads(0, 0))
 		}
 	case "thread":
 		if id, resume := req.getIDCheckLength(parts, 2); resume {
-			req.js(theDB.getThread(id))
+			req.js(conn.getThread(id))
 		}
 	case "user":
 		if id, resume := req.getIDCheckLength(parts, 2); resume {
-			req.js(theDB.getUser(id))
+			req.js(conn.getUser(id))
 		}
 	default:
 		req.W.WriteHeader(404)
@@ -234,7 +240,9 @@ func (req *Request) addUser() *User {
 		PasswordSHA: Sha256(pass),
 		Permissions: Permission(theSettings.Limits["user.default.permissions"])}
 	//TODO captcha
-	user, dup := theDB.addUser(user)
+	conn := theDB.getCopy(req, "nerdtalk")
+	defer conn.close()
+	user, dup := conn.addUser(user)
 	if dup {
 		fmt.Fprintln(req.W, "Sorry, a user with that nickname already exists.")
 		return nil
@@ -248,7 +256,9 @@ func (req *Request) addUser() *User {
 
 func (req *Request) addPost(threadID bson.ObjectId) *Post {
 	//get thread
-	thread := theDB.getThread(threadID)
+	conn := theDB.getCopy(req, "nerdtalk")
+	defer conn.close()
+	thread := conn.getThread(threadID)
 	if thread == nil {
 		req.W.WriteHeader(400)
 		fmt.Println("Tried to post into unknown thread", req)
@@ -260,6 +270,7 @@ func (req *Request) addPost(threadID bson.ObjectId) *Post {
 		req.W.WriteHeader(403)
 		fmt.Println("User tried to post into thread he's not allowed to post!", req)
 		fmt.Fprintln(req.W, "Sorry, you're not allowed to post into this thread")
+		//TODO this check might be useless since the db checks this as well.
 		return nil
 	}
 
@@ -283,12 +294,11 @@ func (req *Request) addPost(threadID bson.ObjectId) *Post {
 		AuthorID: req.User.ID,
 		Text:     text,
 		Created:  created}
-	theDB.addPost(post)
+	conn.addPost(post)
 	return post
 }
 
 func (req *Request) addThread() bson.M {
-
 	title := req.R.FormValue("Title")
 	if title == "" {
 		req.W.WriteHeader(400)
@@ -349,14 +359,19 @@ func (req *Request) addThread() bson.M {
 		SafeTitle: safeTitle,
 		AuthorID:  req.User.ID,
 		Created:   created}
-	theDB.addThread(thread)
+	conn := theDB.getCopy(req, "nerdtalk")
+	defer conn.close()
+	conn.addThread(thread)
 
 	post := &Post{ID: bson.NewObjectId(),
 		ThreadID: thread.ID,
 		AuthorID: req.User.ID,
 		Text:     text,
 		Created:  created}
-	post = theDB.addPost(post)
+	post, threadNotFound := conn.addPost(post)
+	if threadNotFound {
+		panic(bson.M{"Request": req, "DB": conn, "Thread": thread, "Post": post})
+	}
 	return bson.M{"thread": thread, "post": post}
 }
 
@@ -366,7 +381,9 @@ func (req *Request) addLike(postID bson.ObjectId) *Like {
 		return nil
 	}
 	like := &Like{User: req.User.ID, Time: time.Now()}
-	like = theDB.addPostLike(postID, like)
+	conn := theDB.getCopy(req, "nerdtalk")
+	defer conn.close()
+	like = conn.addPostLike(postID, like)
 	//TODO check return
 	//TODO output new post
 	//TODO check auth for like
@@ -389,7 +406,9 @@ func (req *Request) auth() (authed bool) {
 		req.setCookies(true)
 		return
 	}
-	user := theDB.getUser(bson.ObjectIdHex(uid.Value))
+	conn := theDB.getCopy(req, "nerdtalk")
+	defer conn.close()
+	user := conn.getUser(bson.ObjectIdHex(uid.Value))
 	if user == nil || user.Name == "" {
 		//user invalid
 		req.State.AuthState = InvalidUser
