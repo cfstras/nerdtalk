@@ -59,8 +59,31 @@ p {
 	margin: 0.5em;
 }
 
+#newthreadbox {
+	background-color: rgb(235, 255, 240);
+	
+}
+
+#newthreadform {
+	display: inline;
+}
+
+#newthreadbutton {
+	float: right;
+	
+}
+
+#newthreadinputbox {
+	padding: 0 0.5em 0 0;
+	overflow: hidden;
+}
+
+#newthreadinputbox input {
+	width: 100%;
+}
+	
 .author {
-	float:right;
+	float: right;
 	
 }
 
