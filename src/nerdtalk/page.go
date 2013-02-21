@@ -54,7 +54,7 @@ func page(w http.ResponseWriter, r *http.Request) {
 	case "user":
 		//TODO display info about user
 	case "thread":
-		if id, resume := req.getIDCheckLengthFrom(parts, 3, 1); resume {
+		if id, resume := req.getIDCheckLengthFrom(parts, 3, 1); resume { //TODO also let 2 parts through, thread name is irrelevant anyways
 			req.showThread(id)
 		}
 	case "favicon.ico":
@@ -73,7 +73,7 @@ func (req *Request) showThread(id bson.ObjectId) {
 	defer conn.close()
 	thePage.Threads = conn.getThreads(0, 0)
 	for i := 0; i < len(thePage.Threads); i++ {
-		thePage.Threads[i].Author = conn.getUser(thePage.Threads[i].AuthorID)
+		thePage.Threads[i].Author = conn.getUser(thePage.Threads[i].AuthorID, false)
 	}
 
 	if id == "" {
@@ -86,16 +86,18 @@ func (req *Request) showThread(id bson.ObjectId) {
 		thePage.Thread = conn.getThread(id)
 	}
 
-	thePage.Title += " - " + thePage.Thread.Title
-	posts := conn.getPosts(thePage.Thread.ID, 0, 0)
-	thePage.Posts = make([]*PagePost, len(posts))
-	for i, post := range posts {
-		thePage.Posts[i] = &PagePost{Text: template.HTML(md.Markdown([]byte(post.Text), theMD, mdExtensions)),
-			ID:      post.ID,
-			Author:  conn.getUser(post.AuthorID),
-			Created: post.Created,
-			Likes:   &post.Likes}
-		//TODO replace this with a map?
+	if thePage.Thread != nil {
+		thePage.Title += " - " + thePage.Thread.Title
+		posts := conn.getPosts(thePage.Thread.ID, 0, 0)
+		thePage.Posts = make([]*PagePost, len(posts))
+		for i, post := range posts {
+			thePage.Posts[i] = &PagePost{Text: template.HTML(md.Markdown([]byte(post.Text), theMD, mdExtensions)),
+				ID:      post.ID,
+				Author:  conn.getUser(post.AuthorID, false),
+				Created: post.Created,
+				Likes:   &post.Likes}
+			//TODO replace this with a map?
+		}
 	}
 
 	err := template.Must(template.ParseFiles("html/page.html")).ExecuteTemplate(req.W, "page.html", thePage)

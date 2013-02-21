@@ -81,7 +81,7 @@ func defaults() {
 	if _, ok := s.Limits["user.default.permissions"]; !ok {
 		s.Limits["user.default.permissions"] = int(PLogin)
 	}
-	
+
 	if _, ok := s.Strings["cookies.domainName"]; !ok {
 		s.Strings["cookies.domainName"] = ""
 	}

@@ -54,9 +54,9 @@ func (dbc *DBSession) getCopy(req *Request, database string) *Conn {
 	return &Conn{s: s, db: s.DB(database), req: req}
 }
 
-func (conn *Conn) getUser(id bson.ObjectId) *User {
+func (conn *Conn) getUser(id bson.ObjectId, overrideAuth bool) *User {
 	c := conn.db.C("User")
-	if conn.req.Permissions&PRead != PRead {
+	if !overrideAuth && conn.req.Permissions&PRead != PRead {
 		return nil
 	}
 	user := &User{}
@@ -68,9 +68,9 @@ func (conn *Conn) getUser(id bson.ObjectId) *User {
 	return user
 }
 
-func (conn *Conn) getUserByNick(name string) *User {
+func (conn *Conn) getUserByNick(name string, overrideAuth bool) *User {
 	c := conn.db.C("User")
-	if conn.req.Permissions&PRead != PRead {
+	if !overrideAuth && conn.req.Permissions&PRead != PRead {
 		return nil
 	}
 	user := &User{}
@@ -195,7 +195,7 @@ func (conn *Conn) addPost(post *Post) (ret *Post, threadNotFound bool) {
 func (conn *Conn) addUser(user *User) (ret *User, duplicate bool) {
 	//TODO add "create user" permission
 	c := conn.db.C("User")
-	useralt := conn.getUserByNick(user.Nick)
+	useralt := conn.getUserByNick(user.Nick, true)
 	if useralt != nil {
 		return nil, true
 	}

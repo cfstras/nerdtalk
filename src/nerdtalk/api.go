@@ -93,7 +93,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		// User&pass auth
 		conn := theDB.getCopy(req, "nerdtalk")
 		defer conn.close()
-		user := conn.getUserByNick(nickname)
+		user := conn.getUserByNick(nickname, true)
 		if user == nil {
 			req.State.AuthState = InvalidUser
 		} else {
@@ -151,7 +151,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	} else {
 		req.js(req.State)
 	}
-	
+
 }
 
 func (req *Request) get(parts []string) {
@@ -176,7 +176,7 @@ func (req *Request) get(parts []string) {
 		}
 	case "user":
 		if id, resume := req.getIDCheckLength(parts, 2); resume {
-			req.js(conn.getUser(id))
+			req.js(conn.getUser(id, false))
 		}
 	default:
 		req.W.WriteHeader(404)
@@ -185,24 +185,26 @@ func (req *Request) get(parts []string) {
 }
 
 func (req *Request) add(parts []string) {
-	var ret interface{}
+	var ret interface{} //TODO replace this with an Interface like JSONAble
 	var redirect string
 	switch parts[0] {
 	case "post":
 		if id, resume := req.getIDCheckLength(parts, 2); resume {
 			// add a post to thread id
 			ret = req.addPost(id)
-			redirect = "/thread/" + id.Hex()
+			redirect = "/thread/" + id.Hex() + "/" + "wer-das-liest-ist-doof" //TODO hier threadnamen einfügen
 		}
 	case "thread":
 		if resume := req.checkLength(parts, 1); resume {
-			ret = req.addThread()
-			redirect = "/thread/" + ret.(Thread).ID.Hex()
+			thread := req.addThread()
+			ret = thread //TODO (!!!) check return and redirect to error page
+			redirect = "/thread/" + thread.ID.Hex() + "/" + thread.SafeTitle
 		}
 	case "user":
 		if resume := req.checkLength(parts, 1); resume {
-			ret = req.addUser()
-			redirect = "/user/" + ret.(User).ID.Hex()
+			user := req.addUser()
+			ret = user
+			redirect = "/user/" + user.ID.Hex()
 		}
 	case "like":
 		if id, resume := req.getIDCheckLength(parts, 3); resume {
@@ -294,11 +296,15 @@ func (req *Request) addPost(threadID bson.ObjectId) *Post {
 		AuthorID: req.User.ID,
 		Text:     text,
 		Created:  created}
-	conn.addPost(post)
+	post, threadNotFound := conn.addPost(post)
+	if threadNotFound {
+		panic(bson.M{"req": req, "db": conn, "thread": thread, "post": post})
+		//TODO handle this better
+	}
 	return post
 }
 
-func (req *Request) addThread() bson.M {
+func (req *Request) addThread() *Thread {
 	title := req.R.FormValue("Title")
 	if title == "" {
 		req.W.WriteHeader(400)
@@ -322,7 +328,7 @@ func (req *Request) addThread() bson.M {
 	if (!internal && req.Permissions&PPost != PPost) ||
 		(internal && req.Permissions&PPostInternal != PPostInternal) {
 		req.W.WriteHeader(403)
-		fmt.Println("User tried to create thread he's not allowed to post!", req)
+		fmt.Println("User tried to create thread he's not allowed to post!", "perm:", req.Permissions, "PPost", PPost, "&", req.Permissions&PPost, "Internal", internal, req)
 		fmt.Fprintln(req.W, "Sorry, you're not allowed to create a thread here.")
 		return nil
 	}
@@ -330,20 +336,6 @@ func (req *Request) addThread() bson.M {
 	if len(title) < theSettings.Limits["thread.title.minLength"] {
 		req.W.WriteHeader(400)
 		fmt.Fprintln(req.W, "Title length must be at least", theSettings.Limits["thread.title.minLength"])
-		return nil
-	}
-
-	text := req.R.FormValue("Text")
-	if text == "" {
-		req.W.WriteHeader(400)
-		fmt.Println("No Text:", req.R)
-		fmt.Fprintln(req.W, "We need one Text!")
-		return nil
-	}
-
-	if len(text) < theSettings.Limits["post.minLength"] {
-		req.W.WriteHeader(400)
-		fmt.Fprintln(req.W, "Post length must be at least", theSettings.Limits["post.minLength"])
 		return nil
 	}
 
@@ -363,16 +355,7 @@ func (req *Request) addThread() bson.M {
 	defer conn.close()
 	conn.addThread(thread)
 
-	post := &Post{ID: bson.NewObjectId(),
-		ThreadID: thread.ID,
-		AuthorID: req.User.ID,
-		Text:     text,
-		Created:  created}
-	post, threadNotFound := conn.addPost(post)
-	if threadNotFound {
-		panic(bson.M{"Request": req, "DB": conn, "Thread": thread, "Post": post})
-	}
-	return bson.M{"thread": thread, "post": post}
+	return thread
 }
 
 func (req *Request) addLike(postID bson.ObjectId) *Like {
@@ -408,7 +391,7 @@ func (req *Request) auth() (authed bool) {
 	}
 	conn := theDB.getCopy(req, "nerdtalk")
 	defer conn.close()
-	user := conn.getUser(bson.ObjectIdHex(uid.Value))
+	user := conn.getUser(bson.ObjectIdHex(uid.Value), true)
 	if user == nil || user.Name == "" {
 		//user invalid
 		req.State.AuthState = InvalidUser

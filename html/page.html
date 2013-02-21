@@ -34,7 +34,8 @@
 	</div>{{end}}
 </nav></div>
 <div id="thread"><section>{{$time := .Date}}
-	<h2 class="threadheader"><a href="/thread/{{.Thread.ID.Hex}}/{{.Thread.SafeTitle}}">{{.Thread.Title}}</a></h2>
+	<h2 class="threadheader">{{if .Thread}}<a href="/thread/{{.Thread.ID.Hex}}/{{.Thread.SafeTitle}}">{{.Thread.Title}}</a>
+	{{else}}No Thread selected. You might want to Log in!{{end}}</h2>
 	{{range .Posts}}<article><div class="post" id="{{.ID.Hex}}">
 		<aside><div class="info">
 			<span class="author"><a href="/user/{{.Author.Nick}}">{{.Author.Name}}</a></span>
@@ -43,12 +44,12 @@
 		</div></aside>
 		<div class="textbox">{{.Text}}</div>
 	</div></article>{{end}}
-	<div id="postbox">
+	{{if .Thread}}<div id="postbox">
 		<form action="/add/post/{{.Thread.ID.Hex}}?redirect=true" method="POST">
 			<textarea name="Text" cols="50" rows="5"></textarea>
 			<input type="submit" value="Post">
 		</form>
-	</div>
+	</div>{{end}}
 </section></div>
 </div>
 </body>

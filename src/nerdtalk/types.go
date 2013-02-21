@@ -92,7 +92,6 @@ func (a *ReqState) String() string {
 
 type Permission int
 const (
-	PNone Permission = 0
 	PLogin Permission = 1 << iota
 	PRead
 	PReadInternal
@@ -102,4 +101,5 @@ const (
 	PEditInternal
 	PEditUser
 	PApprove
+	PNone Permission = 0
 )
