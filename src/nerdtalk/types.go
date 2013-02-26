@@ -28,11 +28,7 @@ type Post struct {
 }
 
 type Likes []Like
-
-type Like struct {
-	User bson.ObjectId "_id"
-	Time time.Time     "time"
-}
+type Like bson.ObjectId
 
 type User struct {
 	ID          bson.ObjectId "_id,omitempty"

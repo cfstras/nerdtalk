@@ -393,8 +393,7 @@ func (req *Request) addLike(postID bson.ObjectId) *Like {
 		fmt.Fprintln(req.W, "Sorry, you can't do this.")
 		return nil
 	}
-	like := &Like{User: req.User.ID, Time: time.Now()}
-	like = req.DB.addPostLike(postID, like)
+	like := req.DB.addPostLike(postID, (*Like)(&req.User.ID))
 	//TODO check return for like
 	//TODO check auth for like
 	//TODO fix double-likes and make unlike functionality

@@ -92,6 +92,7 @@ p {
 	padding: 0.5em;
 	margin: 0.5em;
 	border: 1px solid rgb(200, 200, 200);
+	word-wrap: break-word;
 }
 
 #newthreadbox {
@@ -134,12 +135,13 @@ p {
 	background-color: rgb(235, 240, 240);
 	margin: 0.5em 0.5em 0.5em 0em;
 	padding: 0.2em 0.5em 0.2em 0.5em;
+	word-wrap: break-word;
 }
 
 .post {
 	background-color: rgb(230, 240, 240);
 	margin: 0.5em 0.5em 0.5em 0em;
-	padding: 0.5em 1.0em 0.2em 0.5em;
+	padding: 0.5em 1.0em 0.7em 0.7em;
 	display: block;
 	overflow: auto;
 	
@@ -147,13 +149,35 @@ p {
 	border-top-left-radius: 0.5em;
 	border-bottom-left-radius: 1.0em;
 	border-bottom-right-radius: 0.5em;
-	border-left: 1px solid rgb(50, 50, 100);
+	border-left: 1px solid grey;
 }
 
 .textbox {
 	/*width: 80%;*/
 	min-height: 1.5em;
 	word-wrap: break-word;
+}
+
+.textbox table {
+	border-collapse: collapse;
+	border-spacing: 0;
+	margin: 0.5em 0.5em 0.5em 0em;
+}
+.textbox table tr {
+	background-color: rgb(230, 240, 240);
+}
+.textbox table tr:nth-child(2n) {
+	background-color: rgb(220, 230, 230);
+}
+.textbox table thead tr {
+	background-color: rgb(220, 230, 230);
+}
+.textbox table thead td {
+	border-bottom: 1px solid black;
+}
+.textbox table td {
+	border: 1px solid #ccc;
+	padding: 6px 13px;
 }
 
 .textbox pre, code {

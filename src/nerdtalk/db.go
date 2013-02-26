@@ -233,7 +233,7 @@ func (conn *Conn) addPostLike(postID bson.ObjectId, like *Like) *Like {
 	//TODO prevent unauth. User to get like list for posts he shouldn't see
 	//TODO debug double likes
 	c := conn.db.C("Post")
-	err := c.UpdateId(postID, bson.M{"$push": bson.M{"likes": like}})
+	err := c.UpdateId(postID, bson.M{"$addToSet": bson.M{"likes": like}})
 	if err != nil {
 		fmt.Println("Like failed:", err)
 		return nil
