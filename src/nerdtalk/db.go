@@ -231,6 +231,7 @@ func (conn *Conn) addPostLike(postID bson.ObjectId, like *Like) *Like {
 	// No permission checking here, since we would need to grab the thread&id first.
 	// Also, the user still can't read the post when he likes it, only see the likes
 	//TODO prevent unauth. User to get like list for posts he shouldn't see
+	//TODO debug double likes
 	c := conn.db.C("Post")
 	err := c.UpdateId(postID, bson.M{"$push": bson.M{"likes": like}})
 	if err != nil {

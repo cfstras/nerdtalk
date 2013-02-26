@@ -247,7 +247,7 @@ func (req *Request) add(parts []string) {
 	case "like":
 		if id, resume := req.getIDCheckLength(parts, 3); resume {
 			ret = req.addLike(id)
-			redirect = "/thread/" + parts[1] + "/#" + parts[2]
+			redirect = "/thread/" + parts[1] + "/null/#" + parts[2]
 		}
 	default:
 		req.W.WriteHeader(404)
@@ -397,6 +397,7 @@ func (req *Request) addLike(postID bson.ObjectId) *Like {
 	like = req.DB.addPostLike(postID, like)
 	//TODO check return for like
 	//TODO check auth for like
+	//TODO fix double-likes and make unlike functionality
 	return like
 }
 

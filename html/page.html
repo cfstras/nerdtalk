@@ -36,14 +36,17 @@
 		<!-- //TODO: add post count n stuff -->
 	</div>{{end}}
 </nav></div>
-<div id="thread"><section>{{$time := .Date}}
+<div id="thread"><section>{{$time := .Date}}{{$Thread := .Thread}}
 	<h2 class="threadheader">{{if .Thread}}<a href="/thread/{{.Thread.ID.Hex}}/{{.Thread.SafeTitle}}">{{.Thread.Title}}</a>
 	{{else}}No Thread selected. You might want to Log in!{{end}}</h2>
 	{{range .Posts}}<article><div class="post" id="{{.ID.Hex}}"><a name="{{.ID.Hex}}" />
 		<aside><div class="info">
 			<span class="author"><a href="/user/{{.Author.Nick}}">{{.Author.Name}}</a></span>
 			<span class="date">{{.Created}}</span>
-			<span class="likes">Likes: {{len .Likes}}</span>
+			<span class="likes">
+				<a href="/add/like/{{$Thread.ID.Hex}}/{{.ID.Hex}}/?redirect=true" class="likebutton">
+					<span class="icon-large fontawesome-heart{{if .ILike}} redfont{{end}}"/></a> (&times; {{len .Likes}})
+			</span>
 		</div></aside>
 		<div class="textbox">{{.Text}}</div>
 	</div></article>{{end}}

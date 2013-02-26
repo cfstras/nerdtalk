@@ -24,8 +24,10 @@ type Post struct {
 	Author   *User         `bson:"-"`
 	Text     string        "text"
 	Created  time.Time     "created"
-	Likes    []Like        `bson:"likes"`
+	Likes    Likes         `bson:"likes"`
 }
+
+type Likes []Like
 
 type Like struct {
 	User bson.ObjectId "_id"

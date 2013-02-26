@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"labix.org/v2/mgo/bson"
 	"math/rand"
 	"time"
 )
@@ -37,4 +38,13 @@ func Sha256(s string) string {
 	hasher := sha256.New()
 	hasher.Write([]byte(s))
 	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func (likes Likes) DoesUserLike(id bson.ObjectId) bool {
+	for _, like := range likes {
+		if like.User == id {
+			return true
+		}
+	}
+	return false
 }

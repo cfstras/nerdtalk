@@ -25,7 +25,8 @@ type PagePost struct {
 	ID      bson.ObjectId
 	Author  *User
 	Created time.Time
-	Likes   *[]Like
+	Likes   Likes
+	ILike   bool
 	Text    template.HTML
 }
 
@@ -94,11 +95,16 @@ func (req *Request) showThread(id bson.ObjectId) {
 		posts := conn.getPosts(thePage.Thread.ID, 0, 0)
 		thePage.Posts = make([]*PagePost, len(posts))
 		for i, post := range posts {
-			thePage.Posts[i] = &PagePost{Text: template.HTML(md.Markdown([]byte(post.Text), theMD, mdExtensions)),
+			p := &PagePost{Text: template.HTML(md.Markdown([]byte(post.Text), theMD, mdExtensions)),
 				ID:      post.ID,
 				Author:  conn.getUser(post.AuthorID, false),
 				Created: post.Created,
-				Likes:   &post.Likes}
+				Likes:   post.Likes}
+			//TODO pretty-print date
+			if req.User != nil && p.Likes.DoesUserLike(req.User.ID) {
+				p.ILike = true
+			}
+			thePage.Posts[i] = p
 			//TODO replace PagePost with a map?
 		}
 	}
