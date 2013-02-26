@@ -9,10 +9,10 @@
 <div id="wrap">
 <header>
 <div id="headbar">
-	<div id="userinfo">
+	<div class="userinfofield {{if .User}}userinfo{{else}}login{{end}}">
 	{{if .User}}
 		logged in as <a href="/user/{{.User.Nick}}">{{.User.Name}}</a>
-		<form id="logout" action="/logout/?redirect=true" method="POST">
+		<form class="logoutform" action="/logout/?redirect=true" method="POST">
 		<input type="submit" value="logout" /></form>
 	{{else}}
 	<form id="Login" action="/login/?redirect=true" method="POST">
@@ -25,16 +25,16 @@
 </div>
 </header>
 <div id="threadbar"><nav>
+	<div class="threadentry newthreadbox"><form id="newthreadform" action="/add/thread/?redirect=true" method="POST">
+			<input id="newthreadbutton" type="submit" value="Discuss!" title="Create new thread" tabindex="2" />
+			<div id="newthreadinputbox"><input type="text" name="Title" title="Enter name for new thread" tabindex="1" /></div>
+		</form>
+	</div>
 	{{range .Threads}}<div class="threadentry" id="{{.ID.Hex}}">
 		<span class="title"><a href="/thread/{{.ID.Hex}}/{{.SafeTitle}}">{{.Title}}</a></span>
 		<!--<a href="/user/{{.Author.ID.Hex}}/{{.Author.Nick}}"><span class="author" id="{{.Author.ID.Hex}}">{{.Author.Name}}</span></a>-->
 		<!-- //TODO: add post count n stuff -->
 	</div>{{end}}
-	<div class="threadentry newthreadbox"><form id="newthreadform" action="/add/thread/?redirect=true" method="POST">
-			<input id="newthreadbutton" type="submit" value="Discuss!" tabindex="2" />
-			<div id="newthreadinputbox"><input type="text" name="Title" tabindex="1" /></div>
-		</form>
-	</div>
 </nav></div>
 <div id="thread"><section>{{$time := .Date}}
 	<h2 class="threadheader">{{if .Thread}}<a href="/thread/{{.Thread.ID.Hex}}/{{.Thread.SafeTitle}}">{{.Thread.Title}}</a>
