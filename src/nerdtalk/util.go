@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"labix.org/v2/mgo/bson"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -13,6 +14,8 @@ const authRandomChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123
 const numRandoms = 32
 
 var randoms chan *rand.Rand
+
+const timeFormat = `%A, %e. %B '%y`
 
 func init() {
 	randoms = make(chan *rand.Rand, 32)
@@ -47,4 +50,42 @@ func (likes Likes) DoesUserLike(id bson.ObjectId) bool {
 		}
 	}
 	return false
+}
+
+func prettyPrint(t time.Time) string {
+	dur := time.Now().Sub(t)
+	if dur < time.Minute {
+		tt := int(dur.Seconds())
+		if tt == 1 {
+			return "1 second ago"
+		} else {
+			return strconv.Itoa(tt) + " seconds ago"
+		}
+	}
+	if dur < time.Hour {
+		tt := int(dur.Minutes())
+		if tt == 1 {
+			return "1 minute ago"
+		} else {
+			return strconv.Itoa(tt) + " minutes ago"
+		}
+	}
+	if dur < (time.Hour * 48) {
+		tt := int(dur.Hours())
+		if tt == 1 {
+			return "1 hour ago"
+		} else {
+			return strconv.Itoa(tt) + " hours ago"
+		}
+	}
+	if dur < (time.Hour * 24 * 14) {
+		tt := int(dur.Hours() / 24)
+		if tt == 1 {
+			return "1 day ago"
+		} else {
+			return strconv.Itoa(tt) + " days ago"
+		}
+	}
+
+	return t.Format(timeFormat)
 }

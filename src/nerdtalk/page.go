@@ -24,7 +24,7 @@ type Page struct {
 type PagePost struct {
 	ID      bson.ObjectId
 	Author  *User
-	Created time.Time
+	Created string
 	Likes   Likes
 	ILike   bool
 	Text    template.HTML
@@ -98,7 +98,7 @@ func (req *Request) showThread(id bson.ObjectId) {
 			p := &PagePost{Text: template.HTML(md.Markdown([]byte(post.Text), theMD, mdExtensions)),
 				ID:      post.ID,
 				Author:  conn.getUser(post.AuthorID, false),
-				Created: post.Created,
+				Created: prettyPrint(post.Created),
 				Likes:   post.Likes}
 			//TODO pretty-print date
 			if req.User != nil && p.Likes.DoesUserLike(req.User.ID) {

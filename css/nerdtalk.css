@@ -55,6 +55,7 @@ p {
 	left: 0;
 	z-index: 999;
 	background-color: rgb(235, 240, 240);
+	border-bottom: 1px solid grey;
 }
 
 .userinfofield {
@@ -192,6 +193,18 @@ p {
 	padding-left: 0.5em;
 	margin: 0.5em;
 	border-left: 1px solid white;
+}
+
+.info .author {
+	display: block;
+}
+
+.info .date {
+	display: block;
+}
+
+.info .likes {
+	display: block;
 }
 
 #postbox {
