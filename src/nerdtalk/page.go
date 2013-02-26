@@ -44,8 +44,9 @@ var mdExtensions int = md.EXTENSION_HARD_LINE_BREAK |
 
 func page(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r)
-	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
-	//TODO fine-grained access
+	req := newReq(w, r)
+	defer req.DB.close()
+	//TODO fine-grained access (explain?)
 	req.auth()
 
 	// find out what the user wants
@@ -53,6 +54,7 @@ func page(w http.ResponseWriter, r *http.Request) {
 	switch parts[0] {
 	case "user":
 		//TODO display info about user
+		//TODO enable user approve vote
 	case "thread":
 		if id, resume := req.getIDCheckLengthFrom(parts, 3, 1); resume { //TODO also let 2 parts through, thread name is irrelevant anyways
 			req.showThread(id)
@@ -63,6 +65,7 @@ func page(w http.ResponseWriter, r *http.Request) {
 	default:
 		req.showThread("")
 	}
+	//TODO handle ?err=... redirects
 
 }
 
@@ -80,7 +83,7 @@ func (req *Request) showThread(id bson.ObjectId) {
 		if thePage.Threads != nil && len(thePage.Threads) > 0 {
 			thePage.Thread = &thePage.Threads[0]
 		} else {
-			//TODO?
+			//TODO show the rules or login help
 		}
 	} else {
 		thePage.Thread = conn.getThread(id)
@@ -96,7 +99,7 @@ func (req *Request) showThread(id bson.ObjectId) {
 				Author:  conn.getUser(post.AuthorID, false),
 				Created: post.Created,
 				Likes:   &post.Likes}
-			//TODO replace this with a map?
+			//TODO replace PagePost with a map?
 		}
 	}
 

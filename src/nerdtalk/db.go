@@ -116,10 +116,19 @@ func (conn *Conn) getPost(id bson.ObjectId) *Post {
 	return post
 }
 
+// Fetch posts for a thread.
+// skip tells the database to skip the first n posts
+// limit limits the number of received posts
+// if skip is negative, sort order is inversed (newest first) and the first 1-n posts are skipped
 func (conn *Conn) getPosts(threadID bson.ObjectId, skip, limit int) []Post {
 	c := conn.db.C("Post")
 	var posts []Post
-	err := c.Find(bson.M{"thread": threadID}).Sort("created").Skip(skip).Limit(limit).All(&posts)
+	sort := "created"
+	if skip < 0 {
+		skip = 1 - skip
+		sort = "-" + sort
+	}
+	err := c.Find(bson.M{"thread": threadID}).Sort(sort).Skip(skip).Limit(limit).All(&posts)
 	if err != nil {
 		fmt.Println("Posts to Thread", threadID, "not found:", err)
 		return nil

@@ -9,18 +9,27 @@ import (
 
 const authRandomChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-"
 
-var random *rand.Rand
+const numRandoms = 32
+
+var randoms chan *rand.Rand
 
 func init() {
-	random = rand.New(rand.NewSource(time.Now().Unix()))
+	randoms = make(chan *rand.Rand, 32)
+	t := time.Now().Unix()
+	for i := 0; i < numRandoms; i++ {
+		r := rand.New(rand.NewSource(t))
+		randoms <- r
+		t++
+	}
 }
 
 func RandString(length int) string {
 	r := make([]byte, length)
-	//TODO make this threadsafe
+	rand := <-randoms
 	for i := 0; i < length; i++ {
-		r[i] = authRandomChars[random.Intn(len(authRandomChars))]
+		r[i] = authRandomChars[rand.Intn(len(authRandomChars))]
 	}
+	randoms <- rand
 	return string(r)
 }
 

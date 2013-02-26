@@ -25,9 +25,18 @@ func fiddle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Use this to get a new Request Context. Remember to `defer req.DB.Close()`
+func newReq(w http.ResponseWriter, r *http.Request) *Request {
+	req := &Request{User: nil, Permissions: 0, W: w, R: r, State: ReqState{Unknown, ""}}
+	db := theDB.getCopy(req, "nerdtalk")
+	req.DB = db
+	return req
+}
+
 func api(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r)
-	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
+	req := newReq(w, r)
+	defer req.DB.close()
 	// user is trying to access api, he better have his passport
 	if !req.auth() {
 		w.WriteHeader(404)
@@ -65,6 +74,9 @@ func (req *Request) getIDCheckLength(parts []string, requiredLength int) (id bso
 }
 
 func (req *Request) getIDCheckLengthFrom(parts []string, requiredLength int, idPos int) (id bson.ObjectId, resume bool) {
+	for len(parts) > 0 && parts[len(parts)-1] == "" {
+		parts = parts[:len(parts)-1]
+	}
 	if resume = req.checkLength(parts, requiredLength); !resume {
 		return
 	}
@@ -85,15 +97,14 @@ func (req *Request) getIDCheckLengthFrom(parts []string, requiredLength int, idP
 
 func login(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r)
-	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
+	req := newReq(w, r)
+	defer req.DB.close()
 
 	nickname := r.FormValue("Nick")
 	password := r.FormValue("Password")
 	if nickname != "" && password != "" {
 		// User&pass auth
-		conn := theDB.getCopy(req, "nerdtalk")
-		defer conn.close()
-		user := conn.getUserByNick(nickname, true)
+		user := req.DB.getUserByNick(nickname, true)
 		if user == nil {
 			req.State.AuthState = InvalidUser
 		} else {
@@ -106,12 +117,18 @@ func login(w http.ResponseWriter, r *http.Request) {
 				// yay
 				req.State.AuthState = Valid
 				req.User = user
+				req.Permissions = user.Permissions
 			}
 		}
 	} else {
 		fmt.Fprintln(req.W, "Please provide Nick and Password")
 	}
 	//TODO check PLogin permission!
+	if req.Permissions&PLogin != PLogin {
+		req.W.WriteHeader(403)
+		fmt.Fprintln(req.W, "Sorry, you aren't allowed to log in. Please wait for approval.")
+		return
+	}
 	if req.State.AuthState == Valid {
 		req.setCookies(false)
 	} else if req.State.AuthState == Unknown {
@@ -120,6 +137,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	req.State.String()
 	if req.R.FormValue("redirect") == "true" {
 		http.Redirect(req.W, req.R, "/", http.StatusSeeOther)
+		//TODO feature: use referrer to redirect appropriately
 	} else {
 		req.js(req.State)
 	}
@@ -130,14 +148,13 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 func logout(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r)
-	req := &Request{User: nil, W: w, R: r, State: ReqState{Unknown, ""}}
+	req := newReq(w, r)
+	defer req.DB.close()
+
 	authed := req.auth()
 	if authed {
 		newToken := RandString(32)
-		conn := theDB.getCopy(req, "nerdtalk")
-		defer conn.close()
-		conn.setUserToken(req.User, newToken)
-		//TODO check result
+		req.DB.setUserToken(req.User, newToken)
 		// don't return the new authtoken!
 	}
 	// clear cookies
@@ -155,28 +172,26 @@ func logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (req *Request) get(parts []string) {
-	conn := theDB.getCopy(req, "nerdtalk")
-	defer conn.close()
 	switch parts[0] {
 	case "post":
 		if id, resume := req.getIDCheckLength(parts, 2); resume {
-			req.js(conn.getPost(id))
+			req.js(req.DB.getPost(id))
 		}
 	case "posts":
 		if id, resume := req.getIDCheckLength(parts, 2); resume {
-			req.js(conn.getPosts(id, 0, 0))
+			req.js(req.DB.getPosts(id, 0, 0))
 		}
 	case "threads":
 		if resume := req.checkLength(parts, 1); resume {
-			req.js(conn.getThreads(0, 0))
+			req.js(req.DB.getThreads(0, 0))
 		}
 	case "thread":
 		if id, resume := req.getIDCheckLength(parts, 2); resume {
-			req.js(conn.getThread(id))
+			req.js(req.DB.getThread(id))
 		}
 	case "user":
 		if id, resume := req.getIDCheckLength(parts, 2); resume {
-			req.js(conn.getUser(id, false))
+			req.js(req.DB.getUser(id, false))
 		}
 	default:
 		req.W.WriteHeader(404)
@@ -191,25 +206,48 @@ func (req *Request) add(parts []string) {
 	case "post":
 		if id, resume := req.getIDCheckLength(parts, 2); resume {
 			// add a post to thread id
-			ret = req.addPost(id)
-			redirect = "/thread/" + id.Hex() + "/" + "wer-das-liest-ist-doof" //TODO hier threadnamen einfügen
+			post := req.addPost(id)
+			if post != nil {
+				redirect = "/thread/" + id.Hex() + "/"
+				if thread := req.DB.getThread(id); thread != nil {
+					redirect += thread.SafeTitle + "/"
+				} else {
+					redirect += "null/"
+				}
+				redirect += "#" + post.ID.Hex()
+				ret = post
+			} else {
+				redirect = "/thread/" + id.Hex() + "/?err=addpost" //TODO more detailed error redirects
+				lastP := req.DB.getPosts(id, -1, 1)
+				if len(lastP) > 0 {
+					redirect += "#" + lastP[0].ID.Hex()
+				}
+			}
 		}
 	case "thread":
 		if resume := req.checkLength(parts, 1); resume {
 			thread := req.addThread()
-			ret = thread //TODO (!!!) check return and redirect to error page
-			redirect = "/thread/" + thread.ID.Hex() + "/" + thread.SafeTitle
+			if thread != nil {
+				redirect = "/thread/" + thread.ID.Hex() + "/" + thread.SafeTitle
+				ret = thread
+			} else {
+				redirect = "/?err=addthread"
+			}
 		}
 	case "user":
 		if resume := req.checkLength(parts, 1); resume {
 			user := req.addUser()
-			ret = user
-			redirect = "/user/" + user.ID.Hex()
+			if user != nil {
+				ret = user
+				redirect = "/user/" + user.ID.Hex()
+			} else {
+				redirect = "/?err=adduser"
+			}
 		}
 	case "like":
 		if id, resume := req.getIDCheckLength(parts, 3); resume {
 			ret = req.addLike(id)
-			redirect = "/thread/" + parts[1]
+			redirect = "/thread/" + parts[1] + "/#" + parts[2]
 		}
 	default:
 		req.W.WriteHeader(404)
@@ -217,7 +255,6 @@ func (req *Request) add(parts []string) {
 		return
 	}
 	if req.R.FormValue("redirect") == "true" {
-		//TODO if ret == nil, print on page
 		http.Redirect(req.W, req.R, redirect, http.StatusSeeOther)
 	} else {
 		req.js(ret)
@@ -242,9 +279,7 @@ func (req *Request) addUser() *User {
 		PasswordSHA: Sha256(pass),
 		Permissions: Permission(theSettings.Limits["user.default.permissions"])}
 	//TODO captcha
-	conn := theDB.getCopy(req, "nerdtalk")
-	defer conn.close()
-	user, dup := conn.addUser(user)
+	user, dup := req.DB.addUser(user)
 	if dup {
 		fmt.Fprintln(req.W, "Sorry, a user with that nickname already exists.")
 		return nil
@@ -258,9 +293,7 @@ func (req *Request) addUser() *User {
 
 func (req *Request) addPost(threadID bson.ObjectId) *Post {
 	//get thread
-	conn := theDB.getCopy(req, "nerdtalk")
-	defer conn.close()
-	thread := conn.getThread(threadID)
+	thread := req.DB.getThread(threadID)
 	if thread == nil {
 		req.W.WriteHeader(400)
 		fmt.Println("Tried to post into unknown thread", req)
@@ -296,10 +329,9 @@ func (req *Request) addPost(threadID bson.ObjectId) *Post {
 		AuthorID: req.User.ID,
 		Text:     text,
 		Created:  created}
-	post, threadNotFound := conn.addPost(post)
+	post, threadNotFound := req.DB.addPost(post)
 	if threadNotFound {
-		panic(bson.M{"req": req, "db": conn, "thread": thread, "post": post})
-		//TODO handle this better
+		fmt.Fprintln(req.W, "Sorry, I couldn't find that thread!")
 	}
 	return post
 }
@@ -351,9 +383,7 @@ func (req *Request) addThread() *Thread {
 		SafeTitle: safeTitle,
 		AuthorID:  req.User.ID,
 		Created:   created}
-	conn := theDB.getCopy(req, "nerdtalk")
-	defer conn.close()
-	conn.addThread(thread)
+	req.DB.addThread(thread)
 
 	return thread
 }
@@ -364,11 +394,8 @@ func (req *Request) addLike(postID bson.ObjectId) *Like {
 		return nil
 	}
 	like := &Like{User: req.User.ID, Time: time.Now()}
-	conn := theDB.getCopy(req, "nerdtalk")
-	defer conn.close()
-	like = conn.addPostLike(postID, like)
-	//TODO check return
-	//TODO output new post
+	like = req.DB.addPostLike(postID, like)
+	//TODO check return for like
 	//TODO check auth for like
 	return like
 }
@@ -389,9 +416,7 @@ func (req *Request) auth() (authed bool) {
 		req.setCookies(true)
 		return
 	}
-	conn := theDB.getCopy(req, "nerdtalk")
-	defer conn.close()
-	user := conn.getUser(bson.ObjectIdHex(uid.Value), true)
+	user := req.DB.getUser(bson.ObjectIdHex(uid.Value), true)
 	if user == nil || user.Name == "" {
 		//user invalid
 		req.State.AuthState = InvalidUser

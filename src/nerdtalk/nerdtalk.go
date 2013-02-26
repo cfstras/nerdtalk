@@ -76,7 +76,7 @@ func defaults() {
 		s.Limits["thread.title.minLength"] = 5
 	}
 	if _, ok := s.Limits["thread.title.safeMaxLength"]; !ok {
-		s.Limits["thread.title.safeMaxLength"] = 20
+		s.Limits["thread.title.safeMaxLength"] = 40
 	}
 	if _, ok := s.Limits["user.default.permissions"]; !ok {
 		s.Limits["user.default.permissions"] = int(PLogin)

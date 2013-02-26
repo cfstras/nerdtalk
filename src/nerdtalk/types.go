@@ -13,7 +13,7 @@ type Thread struct {
 	AuthorID  bson.ObjectId "author"
 	Author    *User         `bson:"-"`
 	Created   time.Time     "created"
-	Internal  bool			"internal"
+	Internal  bool          "internal"
 }
 
 type Post struct {
@@ -43,11 +43,12 @@ type User struct {
 }
 
 type Request struct {
-	User  *User
+	User        *User
 	Permissions Permission
-	W     http.ResponseWriter
-	R     *http.Request
-	State ReqState
+	W           http.ResponseWriter
+	R           *http.Request
+	State       ReqState
+	DB          *Conn
 }
 
 type Settings struct {
@@ -91,6 +92,7 @@ func (a *ReqState) String() string {
 }
 
 type Permission int
+
 const (
 	PLogin Permission = 1 << iota
 	PRead

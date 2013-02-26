@@ -39,7 +39,7 @@
 <div id="thread"><section>{{$time := .Date}}
 	<h2 class="threadheader">{{if .Thread}}<a href="/thread/{{.Thread.ID.Hex}}/{{.Thread.SafeTitle}}">{{.Thread.Title}}</a>
 	{{else}}No Thread selected. You might want to Log in!{{end}}</h2>
-	{{range .Posts}}<article><div class="post" id="{{.ID.Hex}}">
+	{{range .Posts}}<article><div class="post" id="{{.ID.Hex}}"><a name="{{.ID.Hex}}" />
 		<aside><div class="info">
 			<span class="author"><a href="/user/{{.Author.Nick}}">{{.Author.Name}}</a></span>
 			<span class="date">{{.Created}}</span>
