@@ -75,6 +75,9 @@ func defaults() {
 	if _, ok := s.Limits["thread.title.minLength"]; !ok {
 		s.Limits["thread.title.minLength"] = 5
 	}
+	if _, ok := s.Limits["thread.title.MaxLength"]; !ok {
+		s.Limits["thread.title.maxLength"] = 50
+	}
 	if _, ok := s.Limits["thread.title.safeMaxLength"]; !ok {
 		s.Limits["thread.title.safeMaxLength"] = 40
 	}

@@ -371,6 +371,12 @@ func (req *Request) addThread() *Thread {
 		return nil
 	}
 
+	if len(title) > theSettings.Limits["thread.title.maxLength"] {
+		req.W.WriteHeader(400)
+		fmt.Fprintln(req.W, "Title length can not exceed ", theSettings.Limits["thread.title.maxLength"])
+		return nil
+	}
+
 	safeTitle := safeNameReplace.ReplaceAllString(title, "-")
 	maxl := theSettings.Limits["thread.title.safeMaxLength"]
 	if len(safeTitle) > maxl {
