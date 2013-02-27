@@ -27,8 +27,7 @@ type Post struct {
 	Likes    Likes         `bson:"likes"`
 }
 
-type Likes []Like
-type Like bson.ObjectId
+type Likes []bson.ObjectId
 
 type User struct {
 	ID          bson.ObjectId "_id,omitempty"

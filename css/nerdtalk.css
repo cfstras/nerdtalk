@@ -207,6 +207,10 @@ p {
 	display: block;
 }
 
+.userlink {
+	text-decoration: none;
+}
+
 #postbox {
 	margin: 1em 0.5em 0.5em 0.5em;
 	clear: both;

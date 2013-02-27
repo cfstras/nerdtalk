@@ -11,6 +11,7 @@ import (
 //constants
 const URLGet = "/get/"
 const URLAdd = "/add/"
+const URLDel = "/del/"
 const URLFiddle = "/fiddle/"
 const URLLogin = "/login/"
 const URLLogout = "/logout/"
@@ -33,6 +34,7 @@ func main() {
 	http.HandleFunc(URLFiddle, fiddle)
 	http.HandleFunc(URLGet, api)
 	http.HandleFunc(URLAdd, api)
+	http.HandleFunc(URLDel, api)
 	http.HandleFunc(URLLogin, login)
 	http.HandleFunc(URLLogout, logout)
 	http.HandleFunc(URLPage, page)

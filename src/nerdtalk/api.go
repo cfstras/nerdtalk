@@ -53,7 +53,8 @@ func api(w http.ResponseWriter, r *http.Request) {
 		req.get(parts[1:])
 	case "add":
 		req.add(parts[1:])
-
+	case "del":
+		req.del(parts[1:])
 	default:
 		fmt.Println("Bad Request:", r.URL, req, parts)
 		fmt.Fprintln(w, "I'm sorry, what?")
@@ -261,6 +262,27 @@ func (req *Request) add(parts []string) {
 	}
 }
 
+func (req *Request) del(parts []string) {
+	var ret interface{} //TODO replace this with an Interface like JSONAble
+	var redirect string
+	switch parts[0] {
+	case "like":
+		if id, resume := req.getIDCheckLength(parts, 3); resume {
+			ret = req.delLike(id)
+			redirect = "/thread/" + parts[1] + "/null/#" + parts[2]
+		}
+	default:
+		req.W.WriteHeader(404)
+		fmt.Fprintln(req.W, "This is not the query you're looking for!\nquery:", req.R.URL.Path)
+		return
+	}
+	if req.R.FormValue("redirect") == "true" {
+		http.Redirect(req.W, req.R, redirect, http.StatusSeeOther)
+	} else {
+		req.js(ret)
+	}
+}
+
 func (req *Request) addUser() *User {
 	name := req.R.FormValue("Name")
 	nick := req.R.FormValue("Nick")
@@ -394,16 +416,27 @@ func (req *Request) addThread() *Thread {
 	return thread
 }
 
-func (req *Request) addLike(postID bson.ObjectId) *Like {
+func (req *Request) addLike(postID bson.ObjectId) *bson.ObjectId {
 	if req.Permissions&PLogin != PLogin {
 		fmt.Fprintln(req.W, "Sorry, you can't do this.")
 		return nil
 	}
-	like := req.DB.addPostLike(postID, (*Like)(&req.User.ID))
+	like := req.DB.addPostLike(postID, &req.User.ID)
 	//TODO check return for like
 	//TODO check auth for like
 	//TODO fix double-likes and make unlike functionality
 	return like
+}
+
+func (req *Request) delLike(postID bson.ObjectId) *Likes {
+	if req.Permissions&PLogin != PLogin {
+		fmt.Fprintln(req.W, "Sorry, you can't do this.")
+		return nil
+	}
+	likes := req.DB.delMyPostLike(postID, &req.User.ID)
+	//TODO check auth for like
+	//TODO fix double-likes and make unlike functionality
+	return likes
 }
 
 func (req *Request) auth() (authed bool) {

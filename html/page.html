@@ -41,11 +41,15 @@
 	{{else}}No Thread selected. You might want to Log in!{{end}}</h2>
 	{{range .Posts}}<article><div class="post" id="{{.ID.Hex}}"><a name="{{.ID.Hex}}" />
 		<aside><div class="info">
-			<span class="author"><a href="/user/{{.Author.Nick}}">{{.Author.Name}}</a></span>
+			<span class="author"><a href="/user/{{.Author.Nick}}" class="userlink">{{.Author.Name}}</a></span>
 			<span class="date">{{.Created}}</span>
 			<span class="likes">
-				<a href="/add/like/{{$Thread.ID.Hex}}/{{.ID.Hex}}/?redirect=true" class="likebutton">
-					<span class="icon-large fontawesome-heart{{if .ILike}} redfont{{end}}"/></a> (&times; {{len .Likes}})
+				<a href="/{{if .ILike}}del{{else}}add{{end}}/like/{{$Thread.ID.Hex}}/{{.ID.Hex}}/?redirect=true" class="likebutton">
+					<span class="icon-large fontawesome-heart{{if .ILike}} redfont{{end}}"></span></a> (&times; {{len .Likes}})
+			</span>
+			<span class="likelist">
+			{{with .Likes}}<span class="icon-large fontawesome-heart redfont"></span>:
+			{{range .}}<a href="/user/{{.Nick}}" class="userlink">{{.Name}}</a> {{end}}{{end}}
 			</span>
 		</div></aside>
 		<div class="textbox">{{.Text}}</div>

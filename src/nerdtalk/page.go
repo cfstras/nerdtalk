@@ -25,7 +25,7 @@ type PagePost struct {
 	ID      bson.ObjectId
 	Author  *User
 	Created string
-	Likes   Likes
+	Likes   []*User
 	ILike   bool
 	Text    template.HTML
 }
@@ -71,13 +71,10 @@ func page(w http.ResponseWriter, r *http.Request) {
 }
 
 func (req *Request) showThread(id bson.ObjectId) {
-
 	thePage := &Page{Title: "nerdtalk", Date: time.Now(), User: req.User}
-	conn := theDB.getCopy(req, "nerdtalk")
-	defer conn.close()
-	thePage.Threads = conn.getThreads(0, 0)
+	thePage.Threads = req.DB.getThreads(0, 0)
 	for i := 0; i < len(thePage.Threads); i++ {
-		thePage.Threads[i].Author = conn.getUser(thePage.Threads[i].AuthorID, false)
+		thePage.Threads[i].Author = req.DB.getUser(thePage.Threads[i].AuthorID, false)
 	}
 
 	if id == "" {
@@ -87,21 +84,23 @@ func (req *Request) showThread(id bson.ObjectId) {
 			//TODO show the rules or login help
 		}
 	} else {
-		thePage.Thread = conn.getThread(id)
+		thePage.Thread = req.DB.getThread(id)
 	}
 
 	if thePage.Thread != nil {
 		thePage.Title += " - " + thePage.Thread.Title
-		posts := conn.getPosts(thePage.Thread.ID, 0, 0)
+		posts := req.DB.getPosts(thePage.Thread.ID, 0, 0)
 		thePage.Posts = make([]*PagePost, len(posts))
 		for i, post := range posts {
 			p := &PagePost{Text: template.HTML(md.Markdown([]byte(post.Text), theMD, mdExtensions)),
 				ID:      post.ID,
-				Author:  conn.getUser(post.AuthorID, false),
-				Created: prettyPrint(post.Created),
-				Likes:   post.Likes}
+				Author:  req.DB.getUser(post.AuthorID, false),
+				Created: prettyPrint(post.Created)}
+			for _, l := range post.Likes {
+				p.Likes = append(p.Likes, req.DB.getUser(l, false))
+			}
 			//TODO pretty-print date
-			if req.User != nil && p.Likes.DoesUserLike(req.User.ID) {
+			if req.User != nil && post.Likes.DoesUserLike(req.User.ID) {
 				p.ILike = true
 			}
 			thePage.Posts[i] = p

@@ -45,7 +45,7 @@ func Sha256(s string) string {
 
 func (likes Likes) DoesUserLike(id bson.ObjectId) bool {
 	for _, like := range likes {
-		if like == Like(id) {
+		if like == id {
 			return true
 		}
 	}
