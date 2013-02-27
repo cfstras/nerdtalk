@@ -63,7 +63,10 @@ func (conn *Conn) getUser(id bson.ObjectId, overrideAuth bool) *User {
 	err := c.Find(bson.M{"_id": id}).One(user)
 	if err != nil && err != mgo.ErrNotFound {
 		fmt.Println("getUser", id, ":", err)
-		return &User{ID: id, Name: "Unknown User", Nick: "unknown", Joined: time.Unix(0, 0)}
+		return &User{ID: id,
+			Name:   "Unknown User",
+			Nick:   "unknown",
+			Joined: time.Unix(0, 0)}
 	}
 	return user
 }
@@ -119,7 +122,8 @@ func (conn *Conn) getPost(id bson.ObjectId) *Post {
 // Fetch posts for a thread.
 // skip tells the database to skip the first n posts
 // limit limits the number of received posts
-// if skip is negative, sort order is inversed (newest first) and the first 1-n posts are skipped
+// if skip is negative, sort order is inversed (newest first)
+// and the first 1-n posts are skipped
 func (conn *Conn) getPosts(threadID bson.ObjectId, skip, limit int) []Post {
 	c := conn.db.C("Post")
 	var posts []Post
@@ -128,7 +132,8 @@ func (conn *Conn) getPosts(threadID bson.ObjectId, skip, limit int) []Post {
 		skip = 1 - skip
 		sort = "-" + sort
 	}
-	err := c.Find(bson.M{"thread": threadID}).Sort(sort).Skip(skip).Limit(limit).All(&posts)
+	err := c.Find(bson.M{"thread": threadID}).Sort(sort).
+		Skip(skip).Limit(limit).All(&posts)
 	if err != nil {
 		fmt.Println("Posts to Thread", threadID, "not found:", err)
 		return nil
@@ -227,7 +232,7 @@ func (conn *Conn) setUserToken(user *User, newToken string) *User {
 	return user
 }
 
-func (conn *Conn) addPostLike(postID bson.ObjectId, like *bson.ObjectId) *bson.ObjectId {
+func (conn *Conn) addPostLike(postID, like bson.ObjectId) *bson.ObjectId {
 	// No permission checking here, since we would need to grab the thread&id first.
 	// Also, the user still can't read the post when he likes it, only see the likes
 	//TODO prevent unauth. User to get like list for posts he shouldn't see
@@ -238,7 +243,7 @@ func (conn *Conn) addPostLike(postID bson.ObjectId, like *bson.ObjectId) *bson.O
 		fmt.Println("Like failed:", err)
 		return nil
 	}
-	return like
+	return &like
 }
 
 func (conn *Conn) delMyPostLike(postID bson.ObjectId, like *bson.ObjectId) *Likes {

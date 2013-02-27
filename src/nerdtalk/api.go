@@ -421,7 +421,7 @@ func (req *Request) addLike(postID bson.ObjectId) *bson.ObjectId {
 		fmt.Fprintln(req.W, "Sorry, you can't do this.")
 		return nil
 	}
-	like := req.DB.addPostLike(postID, &req.User.ID)
+	like := req.DB.addPostLike(postID, req.User.ID)
 	//TODO check return for like
 	//TODO check auth for like
 	//TODO fix double-likes and make unlike functionality
