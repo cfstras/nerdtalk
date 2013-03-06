@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
+	"os"
 	"time"
 )
 
@@ -28,7 +29,8 @@ func newDB(host, user, database, password string) DBSession {
 	// connect to mongo
 	s, err := mgo.Dial("localhost")
 	if err != nil {
-		panic(err)
+		fmt.Println("Error: could not connect to database:", err, "- exiting.")
+		os.Exit(1)
 	}
 	s.SetMode(mgo.Monotonic, true)
 

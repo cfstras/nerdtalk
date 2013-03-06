@@ -23,14 +23,18 @@ var theDB DBSession
 var theSettings *Settings
 
 func main() {
+	fmt.Println("deploying nerdtalk...")
 	//load settings
 	loadSettings()
 	defaults()
 	saveSettings()
+
 	//init db
-	theDB = newDB("localhost", "fred", "nt", "doedel")
+	fmt.Println("connecting to database...")
+	theDB = newDB("localhost", "fred", "nerdtalk", "doedel")
 	defer theDB.close()
 
+	fmt.Println("reticulating splines...")
 	http.HandleFunc(URLFiddle, fiddle)
 	http.HandleFunc(URLGet, api)
 	http.HandleFunc(URLAdd, api)
@@ -40,6 +44,7 @@ func main() {
 	http.HandleFunc(URLPage, page)
 	http.HandleFunc(URLCSS, css)
 
+	fmt.Println("ready to serve.")
 	http.ListenAndServe(":8080", nil)
 }
 
