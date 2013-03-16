@@ -1,1 +1,4 @@
-go build -o bin/nerdtalk .../src/nerdtalk
+
+cd src\nerdtalk
+go build -o ..\..\bin\nerdtalk.exe
+cd ..\..\

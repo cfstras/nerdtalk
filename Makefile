@@ -1,8 +1,11 @@
-
 all: build
 
 build:
-	go build -o bin/nerdtalk src/nerdtalk/*.go
+ifeq ($(OS),Windows_NT)
+	go build -o bin/nerdtalk.exe src/nerdtalk/*.go
+else
+	go build -o bin/nerdtalk.exe src/nerdtalk/*.go
+endif
 
 clean:
 	rm -r bin
